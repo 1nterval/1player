@@ -1,0 +1,225 @@
+# Copyright (C) 2010 1Player
+# This file is distributed under the same license as the 1Player package.
+msgid ""
+msgstr ""
+"Project-Id-Version: 1Player 1.1\n"
+"Report-Msgid-Bugs-To: http://wordpress.org/tag/1player\n"
+"POT-Creation-Date: 2012-05-22 23:01:54+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2010-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+
+#: 1player.php:318
+msgid "High quality"
+msgstr ""
+
+#: 1player.php:319
+msgid "Low quality"
+msgstr ""
+
+#: 1player.php:320
+msgid "MP4 h264"
+msgstr ""
+
+#: 1player.php:321
+msgid "WebM"
+msgstr ""
+
+#: 1player.php:322
+msgid "Flash FLV"
+msgstr ""
+
+#: 1player.php:323 1player.php:483
+msgid "Flash only"
+msgstr ""
+
+#: 1player.php:324 1player.php:482
+msgid "HTML5 only"
+msgstr ""
+
+#: 1player.php:331
+msgid "Video player"
+msgstr ""
+
+#: 1player.php:335
+msgid "Player size"
+msgstr ""
+
+#: 1player.php:338
+msgid "Width"
+msgstr ""
+
+#: 1player.php:340
+msgid "Height"
+msgstr ""
+
+#: 1player.php:345
+msgid "Skin"
+msgstr ""
+
+#: 1player.php:349
+msgid "Skins are located in %1$s folder"
+msgstr ""
+
+#: 1player.php:353
+msgid "Control bar"
+msgstr ""
+
+#: 1player.php:356
+msgid "Bottom"
+msgstr ""
+
+#: 1player.php:357
+msgid "Top"
+msgstr ""
+
+#: 1player.php:358
+msgid "Over"
+msgstr ""
+
+#: 1player.php:359 1player.php:632 1player.php:648 1player.php:809
+msgid "None"
+msgstr ""
+
+#: 1player.php:360
+msgid "Control bar position"
+msgstr ""
+
+#: 1player.php:364
+msgid "Poster image"
+msgstr ""
+
+#: 1player.php:367
+msgid "Video media attached image"
+msgstr ""
+
+#: 1player.php:368
+msgid "Post featured image"
+msgstr ""
+
+#: 1player.php:372
+msgid "Video versions"
+msgstr ""
+
+#: 1player.php:379
+msgid "Available versions"
+msgstr ""
+
+#: 1player.php:389
+msgid "Delete"
+msgstr ""
+
+#: 1player.php:394 1player.php:410
+msgid "Add new version"
+msgstr ""
+
+#: 1player.php:396 1player.php:477
+msgid "Playing mode"
+msgstr ""
+
+#: 1player.php:400
+msgid "Quality"
+msgstr ""
+
+#: 1player.php:404
+msgid "Format"
+msgstr ""
+
+#: 1player.php:480
+msgid "HTML5 if possible, else Flash"
+msgstr ""
+
+#: 1player.php:481
+msgid "Flash if possible, else HTML5"
+msgstr ""
+
+#: 1player.php:503 1player.php:658
+msgid "Thumbnail"
+msgstr ""
+
+#: 1player.php:567
+msgid "Image Caption"
+msgstr ""
+
+#: 1player.php:584 1player.php:606
+msgid "URL"
+msgstr ""
+
+#: 1player.php:602
+msgid "Image"
+msgstr ""
+
+#: 1player.php:602
+msgid "Audio, Video, or Other File"
+msgstr ""
+
+#: 1player.php:614
+msgid "Title"
+msgstr ""
+
+#: 1player.php:622
+msgid "Alternate Text"
+msgstr ""
+
+#: 1player.php:625
+msgid "Alt text for the image, e.g. &#8220;The Mona Lisa&#8221;"
+msgstr ""
+
+#: 1player.php:629
+msgid "Alignment"
+msgstr ""
+
+#: 1player.php:634
+msgid "Left"
+msgstr ""
+
+#: 1player.php:636
+msgid "Center"
+msgstr ""
+
+#: 1player.php:638
+msgid "Right"
+msgstr ""
+
+#: 1player.php:644
+msgid "Link Image To:"
+msgstr ""
+
+#: 1player.php:649
+msgid "Link to image"
+msgstr ""
+
+#: 1player.php:650
+msgid "Enter a link URL or click above for presets."
+msgstr ""
+
+#: 1player.php:676 1player.php:682
+msgid "Insert into Post"
+msgstr ""
+
+#: 1player.php:684
+msgid "Save"
+msgstr ""
+
+#: 1player.php:790
+msgid "Saved."
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "1Player"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "http://www.1nterval.com"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid "Advanced HTML5 video player"
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Fabien Quatravaux"
+msgstr ""
