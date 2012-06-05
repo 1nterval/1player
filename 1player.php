@@ -33,13 +33,6 @@ function player_init() {
     );
 }
 
-add_action('admin_enqueue_scripts', 'player_scripts');
-function player_scripts(){
-    global $labels;
-    wp_enqueue_script('1player', plugins_url('js/1player.js', __FILE__), array('jquery'));
-    wp_localize_script('1player', 'labels', $labels);
-}
-
 $options = get_option('player');
 if(isset($options['width']) && isset($options['height'])) 
     add_image_size('video-large', $options['width'], $options['height'], true); // grand poster de la vidéo
@@ -189,242 +182,6 @@ function player_find_source($attachment_id, $quality='sd', $compatibility='html5
     return $src;
 }
 
-add_action('wp_print_scripts', 'player_add_scripts');
-function player_add_scripts(){
-    $options = get_option('player');
-    if(is_admin() && $options['poster'] == 'attachment') {
-        wp_enqueue_script("dropdown", plugins_url('msDropDown/jquery.dd.js', __FILE__ ), array('jquery'), '2.37.5');
-    }
-}
-
-add_action('admin_print_styles', 'player_add_style');
-function player_add_style(){
-    $options = get_option('player');
-    if($options['poster'] == 'attachment')
-        wp_enqueue_style('dropdown', plugins_url('msDropDown/dd.css', __FILE__));
-}
-
-
-// galerie vidéo
-add_filter('post_gallery', 'player_video_gallery', 10, 2);
-function player_video_gallery($output, $attr){
-    global $post;
-    static $instance = 0;
-	$instance++;
-	
-	$options = get_option('player');
-        
-    // We're trusting author input, so let's at least make sure it looks like a valid orderby statement
-    if ( isset( $attr['orderby'] ) ) {
-	    $attr['orderby'] = sanitize_sql_orderby( $attr['orderby'] );
-	    if ( !$attr['orderby'] )
-		    unset( $attr['orderby'] );
-    }
-
-    extract(shortcode_atts(array(
-	    'order'      => 'ASC',
-	    'orderby'    => 'menu_order ID',
-	    'id'         => $post->ID,
-	    'include'    => '',
-	    'exclude'    => '',
-	    'width'      => $options['width'],
-	    'height'     => $options['height']
-    ), $attr));
-
-    if ( !empty($include) ) {
-	    $include = preg_replace( '/[^0-9,]+/', '', $include );
-	    $_attachments = get_posts( array('include' => $include, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'video', 'order' => $order, 'orderby' => $orderby) );
-
-	    $attachments = array();
-	    foreach ( $_attachments as $key => $val ) {
-		    $attachments[$val->ID] = $_attachments[$key];
-	    }
-	    
-	    if(!function_exists('player_sort_attachments')) {
-            function player_sort_attachments($a, $b){
-                $parenta = get_post($a->post_parent);
-                $parentb = get_post($b->post_parent);
-                if($parenta->menu_order == $parentb->menu_order){
-                    if($parenta->menu_order < $parentb->menu_order) return -1;
-                    else return 1;
-                } else if($parenta->menu_order < $parentb->menu_order) {
-                    return -1;
-                } else {
-                    return 1;
-                }
-            }
-        }
-        uasort($attachments , 'player_sort_attachments' );  
-    } elseif ( !empty($exclude) ) {
-	    $exclude = preg_replace( '/[^0-9,]+/', '', $exclude );
-	    $attachments = get_children( array('post_parent' => $id, 'exclude' => $exclude, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'video', 'order' => $order, 'orderby' => $orderby) );
-    } else {
-	    $attachments = get_children( array('post_parent' => $id, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'video', 'order' => $order, 'orderby' => $orderby) );
-    }
-
-    if ( empty($attachments) )
-	    return '';
-	    
-	// tester si la gallerie contient des vidéos
-	if (!function_exists("is_video_attachment")) {
-	    function is_video_attachment($a){
-            return substr($a->post_mime_type, 0, 5) == 'video';
-	    }
-	}
-	$videos = array_filter($attachments, "is_video_attachment");
-	
-	if ( empty($videos) )
-	    return '';
-
-    $first = true;
-    foreach ( $attachments as $attachment ) {
-        if($first) {
-            $playlistFlash = "[";
-            $playlistHTML5 = "[";
-            $first = false;
-        } else {
-            $playlistFlash .= ',';
-            $playlistHTML5 .= ',';
-        }
-        
-        $metas = get_post_meta($attachment->ID, "1player", true);
-        
-        if($options['poster'] == 'attachment') {
-            $image = wp_get_attachment_image_src($metas['poster'], 'video-large');
-            $poster = $image[0];
-        } else if($options['poster'] == 'post_thumbnail') {
-            $image = wp_get_attachment_image_src(get_post_thumbnail_id($attachment->post_parent), 'video-large');
-            $poster = $image[0];
-        }
-        
-        // recherche de la source flash
-        if(preg_match('/flash/', $options['mode'])) {
-            unset($src);
-            if(isset($metas['src']) && isset($metas['src']['sd'])){
-                if(is_string($metas['src']['sd'])) $src = $metas['src']['sd'];
-                else {
-                    foreach($metas['src']['sd'] as $format){
-                        if(is_string($format)) $src = $format;
-                        else if(isset($format['flash'])) {
-                            $src = $format['flash'];
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            unset($hd);
-            if(isset($metas['src']) && isset($metas['src']['hd'])){
-                if(is_string($metas['src']['hd'])) $hd = $metas['src']['hd'];
-                else {
-                    foreach($metas['src']['hd'] as $format){
-                        if(is_string($format)) $hd = $format;
-                        else if(isset($format['flash'])) {
-                            $hd = $format['flash'];
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            if(!isset($src) && isset($hd)) {
-                $src = $hd;
-                unset($hd);
-            }
-            if(!isset($src)) $src = $attachment->guid;
-            $playlistFlash .= "{";
-            $playlistFlash .= "'file':'".$src."',";
-            $playlistFlash .= "'image':'".$poster."',";
-            $playlistFlash .= isset($hd) ? "'hd.file':'".$hd."'," : "";
-            $playlistFlash .= "'title':'".addslashes($attachment->post_title)."',";
-            $playlistFlash .= "'legend':'".addslashes($attachment->post_excerpt)."',";
-            $playlistFlash .= "'description':'".addslashes($attachment->post_content)."'";
-            $playlistFlash .= "}";
-        }
-        
-        // recherche de la source html5
-        if(preg_match('/html5/', $options['mode'])) {
-            unset($src);
-            if(isset($metas['src']) && isset($metas['src']['sd'])){
-                if(is_string($metas['src']['sd'])) $src = $metas['src']['sd'];
-                else {
-                    foreach($metas['src']['sd'] as $format){
-                        if(is_string($format)) $src = $format;
-                        else if(isset($format['html5'])) {
-                            $src = $format['html5'];
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            unset($hd);
-            if(isset($metas['src']) && isset($metas['src']['hd'])){
-                if(is_string($metas['src']['hd'])) $hd = $metas['src']['hd'];
-                else {
-                    foreach($metas['src']['hd'] as $format){
-                        if(is_string($format)) $hd = $format;
-                        else if(isset($format['html5'])) {
-                            $hd = $format['html5'];
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            if(!isset($src) && isset($hd)) {
-                $src = $hd;
-                unset($hd);
-            }
-            if(!isset($src)) $src = $attachment->guid;
-            $playlistHTML5 .= "{";
-            $playlistHTML5 .= "'file':'".$src."',";
-            $playlistHTML5 .= "'image':'".$poster."',";
-            $playlistHTML5 .= isset($hd) ? "'hd.file':'".$hd."'," : "";
-            $playlistHTML5 .= "'title':'".addslashes($attachment->post_title)."',";
-            $playlistHTML5 .= "'legend':'".addslashes($attachment->post_excerpt)."',";
-            $playlistHTML5 .= "'description':'".addslashes($attachment->post_content)."'";
-            $playlistHTML5 .= "}";
-        }
-        
-    }
-    $playlistFlash .= "]";
-    $playlistHTML5 .= "]";
-    
-    // gérer les modes et leur priorité
-    $modes = "";
-    $mode = $options['mode'];
-    for($i=1; $i<=2; $i++) {
-        if($modes != "") $modes.=",\n";
-        if(substr($mode, 0, 5) == "html5")
-            $modes .= "{ type: \"html5\", config: {playlist: $playlistHTML5} }";
-        else if(substr($mode, 0, 5) == "flash")
-            $modes .= "{ type: \"flash\", src: \"".plugins_url( 'jwplayer/player.swf' , __FILE__ )."\", config: {playlist: $playlistFlash} }";
-        $mode = substr($mode, 5);
-        if($mode == "") break;
-    }
-    
-    wp_enqueue_script("jwplayer");
-    
-    return "
-	<video id=\"player-$id\" width=\"$width\" height=\"$height\" class=\"1player\"></video>
-	<script type=\"text/javascript\">
-        jQuery(document).ready(function($) {
-            jwplayer(\"player-$id\").setup({
-                height: $height,
-                width: $width,
-                modes: [$modes],
-                plugins: {
-                    'hd-2':''
-                },
-                controlbar: {position: '$options[controlbar]'},
-                skin: '$options[skin]',
-                dock: false
-            });
-        });
-    </script>";
-}
-
 /* ******************* BACKEND ******************* */
 
 register_activation_hook(__FILE__, 'player_install'); 
@@ -435,17 +192,31 @@ function player_install() {
 	    'height' => 300,
 	    'width' => 400,
 	    'versions' => array(
-	        array('hd', 'WebM', 'html5'),
-	        array('sd', 'WebM', 'html5'),
-	        array('hd', 'H264'),
-	        array('sd', 'H264')
+	        array('hd', 'webm', 'html5'),
+	        array('sd', 'webm', 'html5'),
+	        array('hd', 'h264'),
+	        array('sd', 'h264')
 	    ),
 	    'controls' => 'over',
-	    'poster' => 'attachment'
+	    'poster' => 'attachment',
+	    'mode' => 'html5flash'
 	));
 }
 
 if ( is_admin() ){
+    add_action('admin_print_styles-options-media.php', 'player_print_options_assets');
+    function player_print_options_assets(){
+        global $labels;
+        wp_enqueue_script('1player', plugins_url('js/1player.js', __FILE__), array('jquery'));
+        wp_localize_script('1player', 'labels', $labels);
+        wp_enqueue_style('1player', plugins_url('css/1player.css', __FILE__));
+    }
+    
+    add_action('admin_print_styles', 'player_print_dd_assets');
+    function player_print_dd_assets(){
+        wp_register_script("dropdown", plugins_url('msDropDown/jquery.dd.js', __FILE__ ), array('jquery'), '2.37.5');
+        wp_register_style('dropdown', plugins_url('msDropDown/dd.css', __FILE__));
+    }
     
     // page d'options
     add_action('admin_init', 'player_register_settings');
@@ -531,67 +302,6 @@ if ( is_admin() ){
                 </div>
                 <button class="button add_version_button"><?php _e('Add new version', '1player') ?></button>
             </fieldset>
-                
-                <style>
-                    fieldset.column{
-                        display: inline-block;
-                        border-left: solid 1px #DFDFDF;
-                        padding: 10px;
-                    }
-                    
-                    fieldset.column:first-child{
-                        border-left: none;
-                    }
-                    
-                    fieldset.column header{
-                        text-decoration: underline;
-                    }
-                    
-                    fieldset.column .variante{
-                        margin-left: 10px;
-                    }
-                </style>
-                
-                <script>
-                    jQuery(function($){
-                        // pour ajouter une version
-                        $('.add_version_button').click(function(e){
-                            var $parent = $(e.currentTarget).parent();
-                            
-                            var type = undefined;
-                            $parent.find('[name="type"]').each(function(i, elt){
-                                console.log({checked:elt.checked,type:type});
-                                if(elt.checked) {
-                                    if(type == undefined) type = elt.value;
-                                    else type = '';
-                                }
-                            });
-                            if(type == undefined) type = '';
-                            
-                            var qualite;
-                            $parent.find('[name="qualite"]').each(function(i, elt){
-                                if(elt.checked) qualite = elt.value;
-                            });
-                            
-                            var format = $parent.find('[name="format"]').val();
-                            
-                            var index = $('#versions div').length;
-                            
-                            $('#versions').append('<div>'
-                                + labels[qualite] + ' - ' + labels[format] + (type == '' ? '' : ' - '+labels[type])
-                                + '<input type="hidden" name="player[versions]['+index+'][0]" value="'+qualite+'">'
-                                + '<input type="hidden" name="player[versions]['+index+'][1]" value="'+format+'">'
-                                + (type == '' ? '' : '<input type="hidden" name="player[versions]['+index+'][2]" value="'+type+'">') 
-                                +'</div>');
-                            return false;
-                        });
-                        
-                        // pour supprimer une variante
-                        $('.suppr_version_button').live('click', function(e){
-                            $(e.currentTarget).parent().remove();
-                        });
-                    });
-                </script>
             <?php
         }
         
@@ -923,6 +633,8 @@ if ( is_admin() ){
      * @return string The HTML to render the image selector.
      */
     function generateImageSelectorHTML($id, $attachments) {
+      wp_enqueue_script("dropdown");
+      wp_enqueue_style("dropdown");
       $output = "";
       $sel = false;
       if ($attachments) {

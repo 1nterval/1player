@@ -1,0 +1,17 @@
+fieldset.column{
+    display: inline-block;
+    border-left: solid 1px #DFDFDF;
+    padding: 10px;
+}
+
+fieldset.column:first-child{
+    border-left: none;
+}
+
+fieldset.column header{
+    text-decoration: underline;
+}
+
+fieldset.column .variante{
+    margin-left: 10px;
+}
