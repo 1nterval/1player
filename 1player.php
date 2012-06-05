@@ -33,6 +33,13 @@ function player_init() {
     );
 }
 
+add_action('admin_enqueue_scripts', 'player_scripts');
+function player_scripts(){
+    global $labels;
+    wp_enqueue_script('1player', plugins_url('js/1player.js', __FILE__), array('jquery'));
+    wp_localize_script('1player', 'labels', $labels);
+}
+
 $options = get_option('player');
 if(isset($options['width']) && isset($options['height'])) 
     add_image_size('video-large', $options['width'], $options['height'], true); // grand poster de la vidéo
@@ -423,10 +430,10 @@ function player_install() {
 	    'height' => 300,
 	    'width' => 400,
 	    'versions' => array(
-	        array('HD', 'WebM', 'html5'),
-	        array('SD', 'WebM', 'html5'),
-	        array('HD', 'H264'),
-	        array('SD', 'H264')
+	        array('hd', 'WebM', 'html5'),
+	        array('sd', 'WebM', 'html5'),
+	        array('hd', 'H264'),
+	        array('sd', 'H264')
 	    ),
 	    'controls' => 'over',
 	    'poster' => 'attachment'
@@ -566,7 +573,7 @@ if ( is_admin() ){
                             var index = $('#versions div').length;
                             
                             $('#versions').append('<div>'
-                                + qualite + ' - ' + format + (type == '' ? '' : ' - '+type)
+                                + labels[qualite] + ' - ' + labels[format] + (type == '' ? '' : ' - '+labels[type])
                                 + '<input type="hidden" name="player[versions]['+index+'][0]" value="'+qualite+'">'
                                 + '<input type="hidden" name="player[versions]['+index+'][1]" value="'+format+'">'
                                 + (type == '' ? '' : '<input type="hidden" name="player[versions]['+index+'][2]" value="'+type+'">') 
