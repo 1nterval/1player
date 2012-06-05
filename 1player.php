@@ -70,11 +70,13 @@ function player_shortcode($atts) {
     
     } else {
     
+        // a single attachment
         if($id != '' && player_is_video_attachment($id))
             $attachments = array($id => get_post($id));
             
+        // a full playlist
         else if($include != ''){
-            // include the full playlist
+            
             $include = preg_replace( '/[^0-9,]+/', '', $include );
 	        $_attachments = get_posts( array('include' => $include, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'video', 'order' => $order, 'orderby' => $orderby) );
 
@@ -85,21 +87,30 @@ function player_shortcode($atts) {
             uasort($attachments , 'player_sort_attachments' );
         }
         
-        foreach ( $attachments as $attachment ) {
-            
-            $src = player_find_source($attachment->ID);
-            if(!isset($src) || $src == "")  $src = player_find_source($attachment->ID, 'hd');
-
-            $metas = get_post_meta($attachment->ID, "1player", true);
-            if($options['poster'] == 'attachment') {
-                $image = wp_get_attachment_image_src($metas['poster'], 'video-large');
-                $poster = $image[0];
-            } else if($options['poster'] == 'post_thumbnail') {
-                $image = wp_get_attachment_image_src(get_post_thumbnail_id($attachment->post_parent), 'video-large');
-                $poster = $image[0];
-            }
+        if(preg_match('/flash/', $options['mode'])) $videos['flash'] = array();
+        if(preg_match('/html5/', $options['mode'])) $videos['html5'] = array();
         
-            $videos[] = array('src' => $src, 'poster' => $poster, 'title' => addslashes($attachment->post_title), 'legend' => addslashes($attachment->post_excerpt), 'description' => addslashes($attachment->post_content));
+        foreach(array('html5', 'flash') as $mode){
+            foreach ( $attachments as $attachment ) {
+                
+                // gestion flash vs. html5
+                if(preg_match('/'.$mode.'/', $options['mode'])) {
+                    $src = player_find_source($attachment->ID, 'sd', $mode);
+                    if(!isset($src) || $src == "") $src = player_find_source($attachment->ID, 'hd', $mode);
+
+                    $metas = get_post_meta($attachment->ID, "1player", true);
+                    if($options['poster'] == 'attachment') {
+                        $image = wp_get_attachment_image_src($metas['poster'], 'video-large');
+                        $poster = $image[0];
+                    } else if($options['poster'] == 'post_thumbnail') {
+                        $image = wp_get_attachment_image_src(get_post_thumbnail_id($attachment->post_parent), 'video-large');
+                        $poster = $image[0];
+                    }
+                    
+                    $videos[$mode][] = array('src' => $src, 'poster' => $poster, 'title' => addslashes($attachment->post_title), 'legend' => addslashes($attachment->post_excerpt), 'description' => addslashes($attachment->post_content));
+                }
+                
+            }
         }
     }
 	
