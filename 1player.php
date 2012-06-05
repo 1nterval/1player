@@ -69,11 +69,16 @@ function player_shortcode($atts) {
 	), $atts));
 	
 	$videos = array();
+    if(preg_match('/flash/', $options['mode'])) $videos['flash'] = array();
+    if(preg_match('/html5/', $options['mode'])) $videos['html5'] = array();
 	
     if($src != '') {
     
         // point to a source that is not linked to any attachment
-        $videos[] = array('src' => $src, 'poster' => $poster, 'title' => $title, 'legend' => $legend, 'description' => $description);
+        if(preg_match('/flash/', $options['mode']))
+            $videos['flash'][] = array('src' => $src, 'poster' => $poster, 'title' => $title, 'legend' => $legend, 'description' => $description);
+        if(preg_match('/html5/', $options['mode']))
+            $videos['html5'][] = array('src' => $src, 'poster' => $poster, 'title' => $title, 'legend' => $legend, 'description' => $description);
     
     } else {
     
@@ -93,9 +98,6 @@ function player_shortcode($atts) {
 	        }
             uasort($attachments , 'player_sort_attachments' );
         }
-        
-        if(preg_match('/flash/', $options['mode'])) $videos['flash'] = array();
-        if(preg_match('/html5/', $options['mode'])) $videos['html5'] = array();
         
         foreach(array('html5', 'flash') as $mode){
             foreach ( $attachments as $attachment ) {
@@ -138,7 +140,7 @@ function player_shortcode($atts) {
         if($loop) $attributes .= " loop";
         if($autoplay) $attributes .= " autoplay";
         
-	    ?><video <?php echo $attributes ?> id="player<?php echo $instance ?>" src="<?php echo $src ?>" poster="<?php echo $poster ?>" width="<?php echo $width ?>" height="<?php echo $height ?>"></video><?php
+	    ?><video<?php echo $attributes ?> id="player<?php echo $instance ?>" src="<?php echo $src ?>" poster="<?php echo $poster ?>" width="<?php echo $width ?>" height="<?php echo $height ?>"></video><?php
 	}
 }
 
