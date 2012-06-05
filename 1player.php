@@ -52,27 +52,59 @@ function player_shortcode($atts) {
         'skin'      => $options['skin'],
         'autoplay'  => false,
         'loop'      => false,
-        'controls' => $options['controls'],
+        'controls'  => $options['controls'],
+        'order'     => 'ASC',
+        'orderby'   => 'menu_order ID',
+        'include'   => '',
+        'title'     => '',
+        'legend'    => '',
+        'description' => '',
 	), $atts));
 	
-    if($id != '' && player_is_video_attachment($id)){
-        $src = player_find_source($id);
-        if(!isset($src) || $src == "")  $src = player_find_source($id, 'hd');
+	$videos = array();
+	
+    if($src != '') {
+    
+        // point to a source that is not linked to any attachment
+        $videos[] = array('src' => $src, 'poster' => $poster, 'title' => $title, 'legend' => $legend, 'description' => $description);
+    
+    } else {
+    
+        if($id != '' && player_is_video_attachment($id))
+            $attachments = array($id => get_post($id));
+            
+        else if($include != ''){
+            // include the full playlist
+            $include = preg_replace( '/[^0-9,]+/', '', $include );
+	        $_attachments = get_posts( array('include' => $include, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'video', 'order' => $order, 'orderby' => $orderby) );
 
-        $metas = get_post_meta($id, "1player", true);
-        if($options['poster'] == 'attachment') {
-            $image = wp_get_attachment_image_src($metas['poster'], 'video-large');
-            $poster = $image[0];
-        } else if($options['poster'] == 'post_thumbnail') {
-            $attachment = get_post($id);
-            $image = wp_get_attachment_image_src(get_post_thumbnail_id($attachment->post_parent), 'video-large');
-            $poster = $image[0];
+	        $attachments = array();
+	        foreach ( $_attachments as $key => $val ) {
+		        $attachments[$val->ID] = $_attachments[$key];
+	        }
+            uasort($attachments , 'player_sort_attachments' );
+        }
+        
+        foreach ( $attachments as $attachment ) {
+            
+            $src = player_find_source($attachment->ID);
+            if(!isset($src) || $src == "")  $src = player_find_source($attachment->ID, 'hd');
+
+            $metas = get_post_meta($attachment->ID, "1player", true);
+            if($options['poster'] == 'attachment') {
+                $image = wp_get_attachment_image_src($metas['poster'], 'video-large');
+                $poster = $image[0];
+            } else if($options['poster'] == 'post_thumbnail') {
+                $image = wp_get_attachment_image_src(get_post_thumbnail_id($attachment->post_parent), 'video-large');
+                $poster = $image[0];
+            }
+        
+            $videos[] = array('src' => $src, 'poster' => $poster, 'title' => addslashes($attachment->post_title), 'legend' => addslashes($attachment->post_excerpt), 'description' => addslashes($attachment->post_content));
         }
     }
 	
     do_action('player_render', array(
-        'src'       => $src, 
-        'poster'    => $poster,
+        'videos'    => $videos, 
         'width'     => $width,
         'height'    => $height,
         'skin'      => $skin,
@@ -95,6 +127,19 @@ function player_shortcode($atts) {
 function player_is_video_attachment($post_id){
     $post = get_post($post_id);
     return substr($post->post_mime_type, 0, 5) == 'video';
+}
+
+function player_sort_attachments($a, $b){
+    $parenta = get_post($a->post_parent);
+    $parentb = get_post($b->post_parent);
+    if($parenta->menu_order == $parentb->menu_order){
+        if($parenta->menu_order < $parentb->menu_order) return -1;
+        else return 1;
+    } else if($parenta->menu_order < $parentb->menu_order) {
+        return -1;
+    } else {
+        return 1;
+    }
 }
 
 function player_find_source($attachment_id, $quality='sd', $compatibility='html5'){
@@ -123,7 +168,6 @@ function player_find_source($attachment_id, $quality='sd', $compatibility='html5
 
 add_action('wp_print_scripts', 'player_add_scripts');
 function player_add_scripts(){
-    wp_register_script("jwplayer",  plugins_url('jwplayer/jwplayer.js', __FILE__ ), array('jquery'), "5.9", false);
     $options = get_option('player');
     if(is_admin() && $options['poster'] == 'attachment') {
         wp_enqueue_script("dropdown", plugins_url('msDropDown/jquery.dd.js', __FILE__ ), array('jquery'), '2.37.5');
