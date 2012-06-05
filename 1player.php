@@ -104,8 +104,10 @@ function player_shortcode($atts) {
                 
                 // gestion flash vs. html5
                 if(preg_match('/'.$mode.'/', $options['mode'])) {
+                    unset($hd);
                     $src = player_find_source($attachment->ID, 'sd', $mode);
                     if(!isset($src) || $src == "") $src = player_find_source($attachment->ID, 'hd', $mode);
+                    else $hd = player_find_source($attachment->ID, 'hd', $mode);
 
                     $metas = get_post_meta($attachment->ID, "1player", true);
                     if($options['poster'] == 'attachment') {
@@ -117,6 +119,7 @@ function player_shortcode($atts) {
                     }
                     
                     $videos[$mode][] = array('src' => $src, 'poster' => $poster, 'title' => addslashes($attachment->post_title), 'legend' => addslashes($attachment->post_excerpt), 'description' => addslashes($attachment->post_content));
+                    if(isset($hd)) $videos[$mode][sizeof($videos[$mode])-1]['hd'] = $hd;
                 }
                 
             }
