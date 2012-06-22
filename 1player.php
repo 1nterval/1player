@@ -585,20 +585,7 @@ if ( is_admin() ){
         
         // seulement dans le cas où on a une vidéo
 	    if ( substr($post->post_mime_type, 0, 5) == 'video' ) {
-		    $url = $post->guid;
-
-		    $metas = get_post_meta($attachment_id, "1player", true);
-		    if(isset($metas['poster']) && $metas['poster'] != -1) {
-		        // TODO : gérer la taille du poster
-		        $image = wp_get_attachment_image_src($metas['poster'], array(425,749));
-		        $poster = "poster=\"$image[0]\"";
-		    } else {		    
-		        $poster = "";
-		    }
-		
-		    $hd = isset($metas['hd']) ? "hd=\"$metas[hd]\"" : "";
-            
-		    $html = "[video src=\"$url\" $poster $hd]";
+		    $html = "[video id=\"$attachment_id\"]";
         }
 
         return $html;
