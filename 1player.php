@@ -7,15 +7,6 @@
  * Version: 1.2
 */
 
-// include external players glue if any
-foreach (scandir(plugin_dir_path(__FILE__).'/players') as $dir){
-    $fulldir = plugin_dir_path(__FILE__).'/players/'.$dir;
-    if($dir != "." && $dir != ".." && is_dir($fulldir)) {
-        $file = $fulldir.'/'.$dir.'.php';
-        if(is_file($file)) require_once($file);
-    }
-}
-
 add_action('init', 'player_init');
 function player_init() {
     load_plugin_textdomain( '1player', false, basename(dirname(__FILE__)) );
@@ -31,6 +22,12 @@ function player_init() {
         'flash' => __('Flash', '1player'),
         'html5' => __('HTML5', '1player')
     );
+    
+    $options = get_option('player');
+    if($options['script'] != '') {
+        $file = plugin_dir_path(__FILE__).'players/'.$options['script'].'/'.$options['script'].'.php';
+        if(is_file($file)) require_once($file);
+    }
 }
 
 $options = get_option('player');
@@ -199,7 +196,8 @@ function player_install() {
 	    ),
 	    'controls' => 'over',
 	    'poster' => 'attachment',
-	    'mode' => 'html5flash'
+	    'mode' => 'html5flash',
+	    'script' => ''
 	));
 }
 
@@ -225,6 +223,21 @@ if ( is_admin() ){
         add_settings_section('player_main', __('Video player','1player'), 'player_settings_section', 'media');
         
         function player_settings_section(){}
+        
+        add_settings_field('player_script', __('Player script','1player'), 'player_settings_script', 'media', 'player_main');
+        function player_settings_script(){
+            $options = get_option('player'); ?>
+                <select name="player[script]">
+                    <option value="">None</option>
+                    <?php foreach (scandir(plugin_dir_path(__FILE__).'/players') as $dir) :
+                        $fulldir = plugin_dir_path(__FILE__).'/players/'.$dir;
+                        if($dir != "." && $dir != ".." && is_dir($fulldir)) : ?>
+                            <option value="<?php echo $dir ?>" <?php if($options['script'] == $dir) echo "selected" ?>><?php echo $dir ?></option>
+                        <?php endif; 
+                    endforeach; ?>
+                </select>
+            <?php
+        }
         
         add_settings_field('player_size', __('Player size','1player'), 'player_settings_size', 'media', 'player_main');
         function player_settings_size(){
