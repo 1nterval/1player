@@ -166,11 +166,11 @@ function player_find_source($attachment_id, $quality='sd', $compatibility='html5
     $metas = get_post_meta($attachment_id, "1player", true);
     
     if(isset($metas['src']) && isset($metas['src'][$quality])){
-        if(is_string($metas['src'][$quality])) $src = $metas['src'][$quality];
+        if(is_string($metas['src'][$quality]) && $metas['src'][$quality] != "") $src = $metas['src'][$quality];
         else {
             foreach($metas['src'][$quality] as $format){
-                if(is_string($format)) $src = $format;
-                else if(isset($format[$compatibility])) {
+                if(is_string($format) && $format != "") $src = $format;
+                else if(isset($format[$compatibility]) && $format[$compatibility] != "") {
                     $src = $format[$compatibility];
                     break;
                 }
