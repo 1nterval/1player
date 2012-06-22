@@ -251,9 +251,15 @@ if ( is_admin() ){
         
         add_settings_field('player_skin', '<label for="player_skin">'.__('Skin','1player').'</label>', 'player_settings_skin', 'media', 'player_main');
         function player_settings_skin(){
-            $options = get_option('player'); ?>
-                <input id="player_skin" class="regular-text code" name="player[skin]" type="text" value="<?php echo $options['skin'] ?>" />
-                <span class="description"><?php printf(__('Skins are located in %1$s folder', '1player'), '<code>'.plugin_dir_path(__FILE__ ).'jwplayer/skins</code>') ?></span>
+            $options = get_option('player'); 
+            $skins = array("none" => __('Default skin', '1player'));
+            $skins = apply_filters('1player_skins_list', $skins);
+            ?><select name="player[skin]">
+                <?php foreach($skins as $name => $skin) : ?>
+                <option value="<?php echo $name ?>" <?php if($options['skin'] == $name) echo "selected" ?>><?php echo $skin ?></option>
+                <?php endforeach; ?>
+            </select>
+            <span class="description"><?php echo apply_filters('1player_skins_description', __('The selected player script does not provide skins', '1player')) ?></span>
             <?php
         }
         
