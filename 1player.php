@@ -12,7 +12,7 @@ function player_init() {
     load_plugin_textdomain( '1player', false, basename(dirname(__FILE__)) );
     
     // labelisation des versions
-    global $labels;
+    global $labels, $mime_types;
     $labels = array(
         'hd' => __('High quality', '1player'),
         'sd' => __('Low quality', '1player'),
@@ -21,6 +21,11 @@ function player_init() {
         'flv' => __('FLV', '1player'),
         'flash' => __('Flash', '1player'),
         'html5' => __('HTML5', '1player')
+    );
+    $mime_types = array(
+        'h264' => 'video/mp4',
+        'webm' => 'video/webm',
+        'flv' => 'video/x-flv',
     );
     
     $options = get_option('player');
@@ -33,6 +38,13 @@ function player_init() {
 $options = get_option('player');
 if(isset($options['width']) && isset($options['height'])) 
     add_image_size('video-large', $options['width'], $options['height'], true); // grand poster de la vidéo
+    
+// Ajouter l'extension webm à la liste des types vidéo
+add_filter('ext2type', 'player_add_video_type');
+function player_add_video_type($types){
+    $types['video'][] = 'webm';
+    return $types;
+}
 
 add_shortcode('video', 'player_shortcode');
 function player_shortcode($atts) {
@@ -544,29 +556,40 @@ if ( is_admin() ){
     }
     
     // Ajout d'une vidéo depuis le web : remplacer le lien par un shortcode
+    add_filter('file_send_to_editor_url', 'player_insert_new_video', 10, 3);
     add_filter('video_send_to_editor_url', 'player_insert_new_video', 10, 3);
     function player_insert_new_video($html, $href, $title){
+        global $mime_types;
+        
         $post_id = isset($_REQUEST['post_id']) ? intval($_REQUEST['post_id']) : 0;
-
+        
+        // récupérer la première valeur
+        $src = $_REQUEST['src'];
+        while(is_array($src)) {
+            $first_key = array_shift(array_keys($src));
+            if(array_key_exists($first_key, $mime_types) ) $mime_type = $mime_types[$first_key];
+            $src = array_shift($src);
+        }
+        
+        // ne prendre que les vidéos
+        if ( ( $ext = preg_replace( '/^.+?\.([^.]+)$/', '$1', $src ) ) && ( wp_ext2type( $ext ) != 'video' ) ) return;
+        
         // commencer par enregistrer la vidéo dans la bibliothèque
-        // TODO : récupérer le vrai type mime de la vidéo
         $attachment_id = wp_insert_attachment(array(
-            'post_mime_type' => 'video/mp4',
+            'post_mime_type' => $mime_type,
             'post_parent' => $post_id,
-            'post_title' => $title,
-            'guid' => $href,
+            'post_title' => $_REQUEST['title'],
+            'guid' => $src,
         ), false, $post_id);
         
         // enregistrer les metas
         $metas = array();
         if(isset($_REQUEST['poster'])) {
             $metas['poster'] = intval($_REQUEST['poster']);
-            $image = wp_get_attachment_image_src($metas['poster'], 'video-large');
-		    $poster = "poster=\"$image[0]\"";
         }
-        if(isset($_REQUEST['hd'])) {
-            $metas['hd'] = $_REQUEST['hd'];
-            $hd = "hd=\"$metas[hd]\"";
+        
+        if(sizeof($_REQUEST['src']) > 1) {
+            $metas['src'] = $_REQUEST['src'];
         }
         
         if(sizeof($metas) > 0) {
@@ -575,7 +598,7 @@ if ( is_admin() ){
         }
 
         // ensuite, insérer le shortcode dans l'article
-        return "[video src=\"$href\" $poster $hd]";
+        return "[video id=\"$attachment_id\"]";
     }
     
     // Insertion d'une vidéo depuis la bibliothèque : remplacer le lien par un shortcode
@@ -593,19 +616,22 @@ if ( is_admin() ){
     
     add_action('media_upload_image', 'player_upload_new_video');
     function player_upload_new_video(){
+        global $mime_types;
         if (isset($_POST['savebutton'])) {
             $post_id = isset($_REQUEST['post_id']) ? intval($_REQUEST['post_id']) : 0;
             // commencer par enregistrer la vidéo dans la bibliothèque
             
-            $player = get_option("player");
-            
             // récupérer la première valeur
             $src = $_REQUEST['src'];
-            while(is_array($src)) $src = array_shift($src);
+            while(is_array($src)) {
+                $first_key = array_shift(array_keys($src));
+                if(array_key_exists($first_key, $mime_types) ) $mime_type = $mime_types[$first_key];
+                $src = array_shift($src);
+            }
             
             // TODO : récupérer le vrai type mime de la vidéo
             $attachment_id = wp_insert_attachment(array(
-                'post_mime_type' => 'video/mp4',
+                'post_mime_type' => $mime_type,
                 'post_parent' => $post_id,
                 'post_title' => $_REQUEST['title'],
                 'guid' => $src,
