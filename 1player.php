@@ -277,11 +277,12 @@ if ( is_admin() ){
         
         add_settings_field('player_controls', '<label for="player_controls">'.__('Controls','1player').'</label>', 'player_settings_controls', 'media', 'player_main');
         function player_settings_controls(){
-            $options = get_option('player'); ?>
-                <label> <input name="player[controls]" type="radio" value="bottom" <?php if($options['controls'] == "bottom") echo 'checked="checked"' ?> /> <?php _e('Bottom') ?></label>
-                <label> <input name="player[controls]" type="radio" value="top" <?php if($options['controls'] == "top") echo 'checked="checked"' ?> /> <?php _e('Top') ?></label>
-                <label> <input name="player[controls]" type="radio" value="over" <?php if($options['controls'] == "over") echo 'checked="checked"' ?> /> <?php _e('Over') ?></label>
-                <label> <input name="player[controls]" type="radio" value="none" <?php if($options['controls'] == "none") echo 'checked="checked"' ?> /> <?php _e('None') ?></label>
+            $options = get_option('player'); 
+                $positions = array("over" => __('Over', '1player'), "none" => __('None', '1player'));
+                $positions = apply_filters('1player_controls_positions_list', $positions);
+                foreach($positions as $name => $position) : ?>
+                <label> <input name="player[controls]" type="radio" value="<?php echo $name ?>" <?php if($options['controls'] == $name) echo 'checked' ?> /> <?php echo $position ?></label>
+                <?php endforeach; ?>
                 <span class="description"><?php _e('Controls position', '1player') ?></span>
             <?php
         }
