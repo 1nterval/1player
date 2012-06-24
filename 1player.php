@@ -71,16 +71,15 @@ function player_shortcode($atts) {
 	), $atts));
 	
 	$videos = array();
-    if(preg_match('/flash/', $options['mode'])) $videos['flash'] = array();
-    if(preg_match('/html5/', $options['mode'])) $videos['html5'] = array();
 	
     if($src != '') {
     
         // point to a source that is not linked to any attachment
+        $videos[0] = array('poster' => $poster, 'title' => $title, 'legend' => $legend, 'description' => $description);
         if(preg_match('/flash/', $options['mode']))
-            $videos['flash'][] = array('src' => $src, 'poster' => $poster, 'title' => $title, 'legend' => $legend, 'description' => $description);
+            $videos[0]['flash']['src'] = $src;
         if(preg_match('/html5/', $options['mode']))
-            $videos['html5'][] = array('src' => $src, 'poster' => $poster, 'title' => $title, 'legend' => $legend, 'description' => $description);
+            $videos[0]['html5']['src'] = $src;
     
     } else {
     
@@ -101,27 +100,34 @@ function player_shortcode($atts) {
             uasort($attachments , 'player_sort_attachments' );
         }
         
-        foreach(array('html5', 'flash') as $mode){
-            foreach ( $attachments as $attachment ) {
+        foreach ( $attachments as $attachment ) {
+            
+            $metas = get_post_meta($attachment->ID, "1player", true);
+            if($options['poster'] == 'attachment') {
+                $image = wp_get_attachment_image_src($metas['poster'], 'video-large');
+                $poster = $image[0];
+            } else if($options['poster'] == 'post_thumbnail') {
+                $image = wp_get_attachment_image_src(get_post_thumbnail_id($attachment->post_parent), 'video-large');
+                $poster = $image[0];
+            }
+            
+            $videos[]  = array('poster' => $poster, 'title' => addslashes($attachment->post_title), 'legend' => addslashes($attachment->post_excerpt), 'description' => addslashes($attachment->post_content));
+            
+            foreach(array('html5', 'flash') as $mode){
                 
                 // gestion flash vs. html5
                 if(preg_match('/'.$mode.'/', $options['mode'])) {
                     unset($hd);
+                    unset($src);
                     $src = player_find_source($attachment->ID, 'sd', $mode);
-                    if(!isset($src) || $src == "") $src = player_find_source($attachment->ID, 'hd', $mode);
-                    else $hd = player_find_source($attachment->ID, 'hd', $mode);
-
-                    $metas = get_post_meta($attachment->ID, "1player", true);
-                    if($options['poster'] == 'attachment') {
-                        $image = wp_get_attachment_image_src($metas['poster'], 'video-large');
-                        $poster = $image[0];
-                    } else if($options['poster'] == 'post_thumbnail') {
-                        $image = wp_get_attachment_image_src(get_post_thumbnail_id($attachment->post_parent), 'video-large');
-                        $poster = $image[0];
+                    $hd = player_find_source($attachment->ID, 'hd', $mode);
+                    if(!isset($src) || $src == "") {
+                        $src = $hd;
+                        unset($hd);
                     }
                     
-                    $videos[$mode][] = array('src' => $src, 'poster' => $poster, 'title' => addslashes($attachment->post_title), 'legend' => addslashes($attachment->post_excerpt), 'description' => addslashes($attachment->post_content));
-                    if(isset($hd)) $videos[$mode][sizeof($videos[$mode])-1]['hd'] = $hd;
+                    $videos[sizeof($videos)-1][$mode]['src'] = $src;
+                    if(isset($hd)) $videos[sizeof($videos)-1][$mode]['hd'] = $hd;
                 }
                 
             }
@@ -145,7 +151,11 @@ function player_shortcode($atts) {
         if($loop) $attributes .= " loop";
         if($autoplay) $attributes .= " autoplay";
         
-	    ?><video<?php echo $attributes ?> id="player<?php echo $instance ?>" src="<?php echo $src ?>" poster="<?php echo $poster ?>" width="<?php echo $width ?>" height="<?php echo $height ?>"></video><?php
+	    ?><video<?php echo $attributes ?> id="player<?php echo $instance ?>" poster="<?php echo $poster ?>" width="<?php echo $width ?>" height="<?php echo $height ?>">
+	        <?php foreach(array('flash', 'html5') as $mode): ?>
+	            <source src="<?php echo $videos[0][$mode]['src'] ?>" type="video/<?php echo array_pop(explode('.', $videos[0][$mode]['src'])) ?>">
+	        <?php endforeach; ?>
+	    </video><?php
 	}
 }
 
