@@ -29,7 +29,14 @@ function mediaelementjs_render($args){
 	    <source src="<?php echo $src ?>" type='video/mp4'>
 	</video>
 	<script>
-        new MediaElementPlayer("#player<?php echo $args['instance'] ?>");
+	    var args = {};
+	    <?php if($options['mode'] == "flashhtml5") : /* forcer le mode flash si possible */ ?>
+	    if(navigator.mimeTypes == undefined || navigator.mimeTypes["application/x-shockwave-flash"] != undefined) args.mode = "shim";
+	    <?php else if($options['mode'] == "flash") : /* forcer le mode flash */ ?>
+	    args.mode = "shim";
+	    <?php endif; ?>
+	    
+        new MediaElementPlayer("#player<?php echo $args['instance'] ?>", args);
     </script><?php
 }
 
