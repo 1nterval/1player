@@ -13,21 +13,15 @@ add_action('player_render', 'mediaelementjs_render');
 function mediaelementjs_render($args){
     $options = get_option('player');
     
-    if(isset($args['videos']['html5'])) {
-        $src = $args['videos']['html5'][0]['src'];
-        $poster = $args['videos']['html5'][0]['poster'];
-    } else if(isset($args['videos']['flash'])) {
-        $src = $args['videos']['flash'][0]['src'];
-        $poster = $args['videos']['flash'][0]['poster'];
-    }
-    
-    $attributes = '';
+    $attributes = "";
     if($args['controls'] != 'none') $attributes .= " controls";
     if($args['loop']) $attributes .= " loop";
     if($args['autoplay']) $attributes .= " autoplay";
 
-	?><video <?php echo $attributes ?> <?php if($options['skin'] != "none") echo 'class="'.$options['skin'].'"' ?>" id="player<?php echo $args['instance'] ?>" poster="<?php echo $poster ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
-	    <source src="<?php echo $src ?>" type='video/mp4'>
+	?><video <?php echo $attributes ?> <?php if($options['skin'] != "none") echo 'class="'.$options['skin'].'"' ?> id="player<?php echo $args['instance'] ?>" poster="<?php echo $args['videos'][0]['poster'] ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
+	    <?php foreach(array('flash', 'html5') as $mode): ?>
+	        <source src="<?php echo $args['videos'][0][$mode]['src'] ?>" type="video/<?php echo array_pop(explode('.', $args['videos'][0][$mode]['src'])) ?>">
+	    <?php endforeach; ?>
 	</video>
 	<script>
 	    var args = {};
