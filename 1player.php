@@ -36,8 +36,12 @@ function player_init() {
 }
 
 $options = get_option('player');
-if(isset($options['width']) && isset($options['height'])) 
-    add_image_size('video-large', $options['width'], $options['height'], true); // grand poster de la vidéo
+if(isset($options['width']) && isset($options['height'])){ 
+    if($options['controls'] == 'over')
+        add_image_size('video-large', $options['width'], $options['height'], true); // grand poster de la vidéo
+    else 
+        add_image_size('video-large', $options['width'], $options['height']-53, true);
+}
     
 // Ajouter l'extension webm à la liste des types vidéo
 add_filter('ext2type', 'player_add_video_type');
