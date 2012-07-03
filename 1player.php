@@ -700,12 +700,12 @@ if ( is_admin() ){
             } else {
               $selected = "";
             }
-            $output .= "<option value='" . $post->ID . "' title='" . $post->guid . "' " . $selected . ">" . $post->post_title . "</option>\n";
+            $output .= "<option value='" . $post->ID . "' title='" . array_shift(wp_get_attachment_image_src($post->ID, array(50, 75))) . "' " . $selected . ">" . $post->post_title . "</option>\n";
           }
         }
         if (!$sel && $metas['poster'] != -1) {
           $image_post = get_post($metas['poster']);
-          $output .= "<option value='" . $image_post->ID . "' title='" . $image_post->guid . "' selected=selected >" . $image_post->post_title . "</option>\n";
+          $output .= "<option value='" . $image_post->ID . "' title='" . array_shift(wp_get_attachment_image_src($image_post->ID, array(50, 75))) . "' selected=selected >" . $image_post->post_title . "</option>\n";
         }
         $output .= "</select>\n";
       }
