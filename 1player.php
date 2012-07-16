@@ -20,22 +20,33 @@ function player_init() {
         'webm' => __('WebM', '1player'),
         'flv' => __('FLV', '1player'),
         'flash' => __('Flash', '1player'),
-        'html5' => __('HTML5', '1player')
+        'html5' => __('HTML5', '1player'),
+        'mp3' => __('MP3', '1player'),
+        'ogg' => __('OGG Vorbis', '1player'),
     );
     $mime_types = array(
         'h264' => 'video/mp4',
         'webm' => 'video/webm',
         'flv' => 'video/x-flv',
+        'mp3' => 'audio/mpeg',
+        'ogg' => 'audio/ogg',
     );
     
-    $options = get_option('player');
+    $options = get_option('player_video');
     if($options['script'] != '') {
         $file = plugin_dir_path(__FILE__).'players/'.$options['script'].'/'.$options['script'].'.php';
         if(is_file($file)) require_once($file);
+        if(function_exists($options['script'].'_video_render')) add_action('player_video_render', $options['script'].'_video_render');
+    }
+    $options = get_option('player_audio');
+    if($options['script'] != '') {
+        $file = plugin_dir_path(__FILE__).'players/'.$options['script'].'/'.$options['script'].'.php';
+        if(is_file($file)) require_once($file);
+        if(function_exists($options['script'].'_audio_render')) add_action('player_audio_render', $options['script'].'_audio_render');
     }
 }
 
-$options = get_option('player');
+$options = get_option('player_video');
 if(isset($options['width']) && isset($options['height'])){ 
     if($options['controls'] == 'over')
         add_image_size('video-large', $options['width'], $options['height'], true); // grand poster de la vidéo
@@ -50,11 +61,11 @@ function player_add_video_type($types){
     return $types;
 }
 
-add_shortcode('video', 'player_shortcode');
-function player_shortcode($atts) {
+add_shortcode('video', 'player_video_shortcode');
+function player_video_shortcode($atts) {
     static $instance = 0;
     $instance++;
-    $options = get_option('player');
+    $options = get_option('player_video');
     
     extract(shortcode_atts(array(
         'id'        => '',
@@ -138,7 +149,7 @@ function player_shortcode($atts) {
         }
     }
 	
-    do_action('player_render', array(
+    do_action('player_video_render', array(
         'videos'    => $videos, 
         'width'     => $width,
         'height'    => $height,
@@ -149,7 +160,7 @@ function player_shortcode($atts) {
         'instance'  => $instance,
     ));
 	
-    if(!has_action('player_render')){
+    if(!has_action('player_video_render')){
         $attributes = '';
         if($controls != 'none') $attributes .= " controls";
         if($loop) $attributes .= " loop";
@@ -163,9 +174,93 @@ function player_shortcode($atts) {
 	}
 }
 
+add_shortcode('audio', 'player_audio_shortcode');
+function player_audio_shortcode($atts) {
+    static $instance = 0;
+    $instance++;
+    $options = get_option('player_audio');
+    
+    extract(shortcode_atts(array(
+        'id'        => '',
+        'src'       => '',
+        'skin'      => $options['skin'],
+        'autoplay'  => false,
+        'loop'      => false,
+        'order'     => 'ASC',
+        'orderby'   => 'menu_order ID',
+        'include'   => '',
+        'title'     => '',
+        'legend'    => '',
+        'description' => '',
+	), $atts));
+	
+	$audios = array();
+	
+    if($src != '') {
+    
+        // point to a source that is not linked to any attachment
+        $audio[0] = array('title' => $title, 'legend' => $legend, 'description' => $description);
+        if(preg_match('/flash/', $options['mode']))
+            $audios[0]['flash']['src'] = $src;
+        if(preg_match('/html5/', $options['mode']))
+            $audios[0]['html5']['src'] = $src;
+    
+    } else {
+    
+        // a single attachment
+        if($id != '' && player_is_audio_attachment($id))
+            $attachments = array($id => get_post($id));
+        
+        foreach ( $attachments as $attachment ) {
+            
+            $metas = get_post_meta($attachment->ID, "1player", true);
+            
+            $audios[]  = array('title' => addslashes($attachment->post_title), 'legend' => addslashes($attachment->post_excerpt), 'description' => addslashes($attachment->post_content));
+            
+            foreach(array('html5', 'flash') as $mode){
+                
+                // gestion flash vs. html5
+                if(preg_match('/'.$mode.'/', $options['mode'])) {
+                    unset($src);
+                    $src = player_find_source($attachment->ID, 'sd', $mode);
+                    $audios[sizeof($audios)-1][$mode]['src'] = $src;
+                }
+                
+            }
+        }
+    }
+	
+    do_action('player_audio_render', array(
+        'audios'    => $audios, 
+        'skin'      => $skin,
+        'autoplay'  => $autoplay,
+        'loop'      => $loop,
+        'controls'  => $controls,
+        'instance'  => $instance,
+    ));
+	
+    if(!has_action('player_audio_render')){
+        $attributes = '';
+        $attributes .= " controls";
+        if($loop) $attributes .= " loop";
+        if($autoplay) $attributes .= " autoplay";
+        
+	    ?><audio<?php echo $attributes ?> id="player<?php echo $instance ?>">
+	        <?php foreach(array('flash', 'html5') as $mode): ?>
+	            <source src="<?php echo $audios[0][$mode]['src'] ?>" type="audio/<?php echo array_pop(explode('.', $audios[0][$mode]['src'])) ?>">
+	        <?php endforeach; ?>
+	    </audio><?php
+	}
+}
+
 function player_is_video_attachment($post_id){
     $post = get_post($post_id);
     return substr($post->post_mime_type, 0, 5) == 'video';
+}
+
+function player_is_audio_attachment($post_id){
+    $post = get_post($post_id);
+    return substr($post->post_mime_type, 0, 5) == 'audio';
 }
 
 function player_sort_attachments($a, $b){
@@ -210,7 +305,7 @@ function player_find_source($attachment_id, $quality='sd', $compatibility='html5
 register_activation_hook(__FILE__, 'player_install'); 
 function player_install() {
     // ajoute les options par défaut si elles n'existent pas encore
-	add_option('player', array(
+	add_option('player_video', array(
 	    'skin' => '',
 	    'height' => 300,
 	    'width' => 400,
@@ -222,6 +317,16 @@ function player_install() {
 	    ),
 	    'controls' => 'over',
 	    'poster' => 'attachment',
+	    'mode' => 'html5flash',
+	    'script' => ''
+	));
+	
+	add_option('player_audio', array(
+	    'skin' => '',
+	    'versions' => array(
+	        array('sd', 'ogg', 'html5'),
+	        array('sd', 'mp3')
+	    ),
 	    'mode' => 'html5flash',
 	    'script' => ''
 	));
@@ -246,14 +351,16 @@ if ( is_admin() ){
     add_action('admin_init', 'player_register_settings');
     function player_register_settings() {
         
-        add_settings_section('player_main', __('Video player','1player'), 'player_settings_section', 'media');
+        add_settings_section('player_video_main', __('Video player','1player'), 'player_video_settings_section', 'media');
+        add_settings_section('player_audio_main', __('Audio player','1player'), 'player_audio_settings_section', 'media');
         
-        function player_settings_section(){}
+        function player_video_settings_section(){}
+        function player_audio_settings_section(){}
         
-        add_settings_field('player_script', __('Player script','1player'), 'player_settings_script', 'media', 'player_main');
-        function player_settings_script(){
-            $options = get_option('player'); ?>
-                <select name="player[script]">
+        add_settings_field('player_video_script', '<label for="player_video_script">'.__('Player script','1player').'</label>', 'player_settings_video_script', 'media', 'player_video_main');
+        function player_settings_video_script(){
+            $options = get_option('player_video'); ?>
+                <select name="player_video[script]" id="player_video_script">
                     <option value="">None</option>
                     <?php foreach (scandir(plugin_dir_path(__FILE__).'/players') as $dir) :
                         $fulldir = plugin_dir_path(__FILE__).'/players/'.$dir;
@@ -265,22 +372,22 @@ if ( is_admin() ){
             <?php
         }
         
-        add_settings_field('player_size', __('Player size','1player'), 'player_settings_size', 'media', 'player_main');
-        function player_settings_size(){
-            $options = get_option('player'); ?>
-                <label for="player_size_w"><?php _e('Width') ?></label>
-                <input id="player_size_w" class="small-text" type="text" name="player[width]" value="<?php echo $options['width'] ?>" />
-                <label for="player_size_h"><?php _e('Height') ?></label>
-                <input id="player_size_h" class="small-text" type="text" name="player[height]" value="<?php echo $options['height'] ?>" />
+        add_settings_field('player_video_size', __('Player size','1player'), 'player_settings_video_size', 'media', 'player_video_main');
+        function player_settings_video_size(){
+            $options = get_option('player_video'); ?>
+                <label for="player_video_size_w"><?php _e('Width') ?></label>
+                <input id="player_video_size_w" class="small-text" type="text" name="player_video[width]" value="<?php echo $options['width'] ?>" />
+                <label for="player_video_size_h"><?php _e('Height') ?></label>
+                <input id="player_video_size_h" class="small-text" type="text" name="player_video[height]" value="<?php echo $options['height'] ?>" />
             <?php
         }
         
-        add_settings_field('player_skin', '<label for="player_skin">'.__('Skin','1player').'</label>', 'player_settings_skin', 'media', 'player_main');
-        function player_settings_skin(){
-            $options = get_option('player'); 
+        add_settings_field('player_video_skin', '<label for="player_skin">'.__('Skin','1player').'</label>', 'player_settings_video_skin', 'media', 'player_video_main');
+        function player_settings_video_skin(){
+            $options = get_option('player_video'); 
             $skins = array("none" => __('Default skin', '1player'));
             $skins = apply_filters('1player_skins_list', $skins);
-            ?><select name="player[skin]">
+            ?><select name="player_video[skin]">
                 <?php foreach($skins as $name => $skin) : ?>
                 <option value="<?php echo $name ?>" <?php if($options['skin'] == $name) echo "selected" ?>><?php echo $skin ?></option>
                 <?php endforeach; ?>
@@ -289,30 +396,30 @@ if ( is_admin() ){
             <?php
         }
         
-        add_settings_field('player_controls', '<label for="player_controls">'.__('Controls','1player').'</label>', 'player_settings_controls', 'media', 'player_main');
-        function player_settings_controls(){
-            $options = get_option('player'); 
+        add_settings_field('player_video_controls', '<label for="player_controls">'.__('Controls','1player').'</label>', 'player_settings_video_controls', 'media', 'player_video_main');
+        function player_settings_video_controls(){
+            $options = get_option('player_video'); 
                 $positions = array("over" => __('Over', '1player'), "none" => __('None', '1player'));
                 $positions = apply_filters('1player_controls_positions_list', $positions);
                 foreach($positions as $name => $position) : ?>
-                <label> <input name="player[controls]" type="radio" value="<?php echo $name ?>" <?php if($options['controls'] == $name) echo 'checked' ?> /> <?php echo $position ?></label>
+                <label> <input name="player_video[controls]" type="radio" value="<?php echo $name ?>" <?php if($options['controls'] == $name) echo 'checked' ?> /> <?php echo $position ?></label>
                 <?php endforeach; ?>
                 <span class="description"><?php _e('Controls position', '1player') ?></span>
             <?php
         }
         
-        add_settings_field('player_poster', '<label for="player_poster">'.__('Poster image','1player').'</label>', 'player_settings_poster', 'media', 'player_main');
-        function player_settings_poster(){
-            $options = get_option('player'); ?>
-                <label> <input name="player[poster]" type="radio" value="attachment" <?php if($options['poster'] == "attachment") echo 'checked="checked"' ?> /> <?php _e('Video media attached image', '1player') ?></label>
-                <label> <input name="player[poster]" type="radio" value="post_thumbnail" <?php if($options['poster'] == "post_thumbnail") echo 'checked="checked"' ?> /> <?php _e('Post featured image', '1player') ?></label>
+        add_settings_field('player_video_poster', '<label for="player_poster">'.__('Poster image','1player').'</label>', 'player_settings_video_poster', 'media', 'player_video_main');
+        function player_settings_video_poster(){
+            $options = get_option('player_video'); ?>
+                <label> <input name="player_video[poster]" type="radio" value="attachment" <?php if($options['poster'] == "attachment") echo 'checked="checked"' ?> /> <?php _e('Video media attached image', '1player') ?></label>
+                <label> <input name="player_video[poster]" type="radio" value="post_thumbnail" <?php if($options['poster'] == "post_thumbnail") echo 'checked="checked"' ?> /> <?php _e('Post featured image', '1player') ?></label>
             <?php
         }
         
-        add_settings_field('player_versions', '<label for="player_versions">'.__('Video versions','1player').'</label>', 'player_settings_versions', 'media', 'player_main');
-        function player_settings_versions(){
+        add_settings_field('player_video_versions', '<label for="player_versions">'.__('Video versions','1player').'</label>', 'player_settings_video_versions', 'media', 'player_video_main');
+        function player_settings_video_versions(){
             global $labels;
-            $options = get_option('player'); 
+            $options = get_option('player_video'); 
             if(!isset($options['versions']) || !is_array($options['versions'])) $options['versions'] = array();
             ?>
             <fieldset class="column" id="versions">
@@ -320,10 +427,10 @@ if ( is_admin() ){
                 <?php foreach($options['versions'] as $i => $version) : ?>
                     <div>
                         <?php echo $labels[$version[0]].' - '.$labels[$version[1]]; if (sizeof($version)>2) echo ' - '.$labels[$version[2]] ?>
-                        <input type="hidden" name="player[versions][<?php echo $i ?>][0]" value="<?php echo $version[0] ?>" />
-                        <input type="hidden" name="player[versions][<?php echo $i ?>][1]" value="<?php echo $version[1] ?>" />
+                        <input type="hidden" name="player_video[versions][<?php echo $i ?>][0]" value="<?php echo $version[0] ?>" />
+                        <input type="hidden" name="player_video[versions][<?php echo $i ?>][1]" value="<?php echo $version[1] ?>" />
                         <?php if(sizeof($version)>2) :?>
-                        <input type="hidden" name="player[versions][<?php echo $i ?>][2]" value="<?php echo $version[2] ?>" />
+                        <input type="hidden" name="player_video[versions][<?php echo $i ?>][2]" value="<?php echo $version[2] ?>" />
                         <?php endif; ?>
                         <button class="button suppr_version_button"><?php _e('Delete') ?></button>
                     </div>
@@ -351,17 +458,58 @@ if ( is_admin() ){
             <?php
         }
         
-        add_settings_field('player_mode', '<label for="player_mode">'.__('Playing mode','1player').'</label>', 'player_settings_mode', 'media', 'player_main');
-        function player_settings_mode(){
-            $options = get_option('player'); ?>
-                <label> <input name="player[mode]" type="radio" value="html5flash" <?php if($options['mode'] == "html5flash") echo 'checked="checked"' ?> /> <?php _e('HTML5 if possible, else Flash','1player') ?></label>
-                <label> <input name="player[mode]" type="radio" value="flashhtml5" <?php if($options['mode'] == "flashhtml5") echo 'checked="checked"' ?> /> <?php _e('Flash if possible, else HTML5','1player') ?></label>
-                <label> <input name="player[mode]" type="radio" value="html5" <?php if($options['mode'] == "html5") echo 'checked="checked"' ?> /> <?php _e('HTML5 only','1player') ?></label>
-                <label> <input name="player[mode]" type="radio" value="flash" <?php if($options['mode'] == "flash") echo 'checked="checked"' ?> /> <?php _e('Flash only','1player') ?></label>
+        add_settings_field('player_video_mode', __('Playing mode','1player'), 'player_settings_video_mode', 'media', 'player_video_main');
+        function player_settings_video_mode(){
+            $options = get_option('player_video'); ?>
+                <label> <input name="player_video[mode]" type="radio" value="html5flash" <?php if($options['mode'] == "html5flash") echo 'checked="checked"' ?> /> <?php _e('HTML5 if possible, else Flash','1player') ?></label>
+                <label> <input name="player_video[mode]" type="radio" value="flashhtml5" <?php if($options['mode'] == "flashhtml5") echo 'checked="checked"' ?> /> <?php _e('Flash if possible, else HTML5','1player') ?></label>
+                <label> <input name="player_video[mode]" type="radio" value="html5" <?php if($options['mode'] == "html5") echo 'checked="checked"' ?> /> <?php _e('HTML5 only','1player') ?></label>
+                <label> <input name="player_video[mode]" type="radio" value="flash" <?php if($options['mode'] == "flash") echo 'checked="checked"' ?> /> <?php _e('Flash only','1player') ?></label>
             <?php
         }
         
-        register_setting( 'media', 'player');
+        register_setting( 'media', 'player_video');
+        
+        add_settings_field('player_audio_script', __('Player script','1player'), 'player_settings_audio_script', 'media', 'player_audio_main');
+        function player_settings_audio_script(){
+            $options = get_option('player_audio'); ?>
+                <select name="player_audio[script]">
+                    <option value="">None</option>
+                    <?php foreach (scandir(plugin_dir_path(__FILE__).'/players') as $dir) :
+                        $fulldir = plugin_dir_path(__FILE__).'/players/'.$dir;
+                        if($dir != "." && $dir != ".." && is_dir($fulldir)) : ?>
+                            <option value="<?php echo $dir ?>" <?php if($options['script'] == $dir) echo "selected" ?>><?php echo $dir ?></option>
+                        <?php endif; 
+                    endforeach; ?>
+                </select>
+            <?php
+        }
+        
+        add_settings_field('player_audio_skin', '<label for="player_audio_skin">'.__('Skin','1player').'</label>', 'player_settings_audio_skin', 'media', 'player_audio_main');
+        function player_settings_audio_skin(){
+            $options = get_option('player_audio'); 
+            $skins = array("none" => __('Default skin', '1player'));
+            $skins = apply_filters('1player_skins_list', $skins);
+            ?><select name="player_audio[skin]">
+                <?php foreach($skins as $name => $skin) : ?>
+                <option value="<?php echo $name ?>" <?php if($options['skin'] == $name) echo "selected" ?>><?php echo $skin ?></option>
+                <?php endforeach; ?>
+            </select>
+            <span class="description"><?php echo apply_filters('1player_skins_description', __('The selected player script does not provide skins', '1player')) ?></span>
+            <?php
+        }
+        
+        add_settings_field('player_audio_mode', __('Playing mode','1player'), 'player_settings_audio_mode', 'media', 'player_audio_main');
+        function player_settings_audio_mode(){
+            $options = get_option('player_audio'); ?>
+                <label> <input name="player_audio[mode]" type="radio" value="html5flash" <?php if($options['mode'] == "html5flash") echo 'checked="checked"' ?> /> <?php _e('HTML5 if possible, else Flash','1player') ?></label>
+                <label> <input name="player_audio[mode]" type="radio" value="flashhtml5" <?php if($options['mode'] == "flashhtml5") echo 'checked="checked"' ?> /> <?php _e('Flash if possible, else HTML5','1player') ?></label>
+                <label> <input name="player_audio[mode]" type="radio" value="html5" <?php if($options['mode'] == "html5") echo 'checked="checked"' ?> /> <?php _e('HTML5 only','1player') ?></label>
+                <label> <input name="player_audio[mode]" type="radio" value="flash" <?php if($options['mode'] == "flash") echo 'checked="checked"' ?> /> <?php _e('Flash only','1player') ?></label>
+            <?php
+        }
+        
+        register_setting( 'media', 'player_audio');
     }
     
     
