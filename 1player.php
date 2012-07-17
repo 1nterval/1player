@@ -650,10 +650,15 @@ if ( is_admin() ){
                 'poster' => isset($attachment['poster']) ? intval($attachment['poster']) : '',
                 'src' => isset($attachment['src']) ? $attachment['src'] : '',
             );
-            
-            // sauvegarde des metas
-            update_post_meta($post['ID'], "1player", $metas);
+        } else if ( substr($post["post_mime_type"], 0, 5) == 'audio') {
+            $metas = array(
+                'src' => isset($attachment['src']) ? $attachment['src'] : '',
+            );
         }
+        
+        // sauvegarde des metas
+        if(isset($metas)) update_post_meta($post['ID'], "1player", $metas);
+        
         return $post;
     }
     
