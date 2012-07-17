@@ -231,6 +231,7 @@ function player_audio_shortcode($atts) {
                 if(preg_match('/'.$mode.'/', $options['mode'])) {
                     unset($src);
                     $src = player_find_source($attachment->ID, 'sd', $mode);
+                    if(!isset($src)) $src = player_find_source($attachment->ID, 'hd', $mode);
                     $audios[sizeof($audios)-1][$mode]['src'] = $src;
                 }
                 
