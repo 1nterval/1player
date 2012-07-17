@@ -32,6 +32,12 @@ function player_init() {
         'ogg' => 'audio/ogg',
     );
     
+    add_filter('upload_mimes', 'player_add_mime');
+    function player_add_mime($mimes){
+        $mimes['webm'] = 'video/webm';
+        return $mimes;
+    }
+    
     $options = get_option('player_video');
     if($options['script'] != '') {
         $file = plugin_dir_path(__FILE__).'players/'.$options['script'].'/'.$options['script'].'.php';
@@ -157,7 +163,7 @@ function player_video_shortcode($atts) {
         'autoplay'  => $autoplay,
         'loop'      => $loop,
         'controls'  => $controls,
-        'instance'  => $instance,
+        'instance'  => "video$instance",
     ));
 	
     if(!has_action('player_video_render')){
@@ -166,7 +172,7 @@ function player_video_shortcode($atts) {
         if($loop) $attributes .= " loop";
         if($autoplay) $attributes .= " autoplay";
         
-	    ?><video<?php echo $attributes ?> id="player<?php echo $instance ?>" poster="<?php echo $poster ?>" width="<?php echo $width ?>" height="<?php echo $height ?>">
+	    ?><video<?php echo $attributes ?> id="player<?php echo 'video'.$instance ?>" poster="<?php echo $poster ?>" width="<?php echo $width ?>" height="<?php echo $height ?>">
 	        <?php foreach(array('flash', 'html5') as $mode): ?>
 	            <source src="<?php echo $videos[0][$mode]['src'] ?>" type="video/<?php echo array_pop(explode('.', $videos[0][$mode]['src'])) ?>">
 	        <?php endforeach; ?>
@@ -183,6 +189,8 @@ function player_audio_shortcode($atts) {
     extract(shortcode_atts(array(
         'id'        => '',
         'src'       => '',
+        'width'     => $options['width'],
+        'height'    => $options['height'],
         'skin'      => $options['skin'],
         'autoplay'  => false,
         'loop'      => false,
@@ -232,11 +240,13 @@ function player_audio_shortcode($atts) {
 	
     do_action('player_audio_render', array(
         'audios'    => $audios, 
+        'width'     => $width,
+        'height'    => $height,
         'skin'      => $skin,
         'autoplay'  => $autoplay,
         'loop'      => $loop,
         'controls'  => $controls,
-        'instance'  => $instance,
+        'instance'  => "audio$instance",
     ));
 	
     if(!has_action('player_audio_render')){
@@ -245,7 +255,7 @@ function player_audio_shortcode($atts) {
         if($loop) $attributes .= " loop";
         if($autoplay) $attributes .= " autoplay";
         
-	    ?><audio<?php echo $attributes ?> id="player<?php echo $instance ?>">
+	    ?><audio<?php echo $attributes ?> id="player<?php echo 'audio'.$instance ?>" width="<?php echo $width ?>" height="<?php echo $height ?>">
 	        <?php foreach(array('flash', 'html5') as $mode): ?>
 	            <source src="<?php echo $audios[0][$mode]['src'] ?>" type="audio/<?php echo array_pop(explode('.', $audios[0][$mode]['src'])) ?>">
 	        <?php endforeach; ?>
@@ -424,6 +434,15 @@ if ( is_admin() ){
             ?>
             <fieldset class="column" id="versions">
                 <header><?php _e('Available versions', '1player') ?></header>
+                <script type="text/template" class="template">
+                    <div>
+                        ${labels}
+                        {{each(i, version) versions }}
+                            <input type="hidden" name="player_video[versions][${index}][${i}]" value="${version}">
+                        {{/each}}
+                        <button class="button suppr_version_button"><?php _e('Delete') ?></button>
+                    </div>
+                </script>
                 <?php foreach($options['versions'] as $i => $version) : ?>
                     <div>
                         <?php echo $labels[$version[0]].' - '.$labels[$version[1]]; if (sizeof($version)>2) echo ' - '.$labels[$version[2]] ?>
@@ -485,6 +504,16 @@ if ( is_admin() ){
             <?php
         }
         
+        add_settings_field('player_audio_size', __('Player size','1player'), 'player_settings_audio_size', 'media', 'player_audio_main');
+        function player_settings_audio_size(){
+            $options = get_option('player_audio'); ?>
+                <label for="player_audio_size_w"><?php _e('Width') ?></label>
+                <input id="player_audio_size_w" class="small-text" type="text" name="player_audio[width]" value="<?php echo $options['width'] ?>" />
+                <label for="player_audio_size_h"><?php _e('Height') ?></label>
+                <input id="player_audio_size_h" class="small-text" type="text" name="player_audio[height]" value="<?php echo $options['height'] ?>" />
+            <?php
+        }
+        
         add_settings_field('player_audio_skin', '<label for="player_audio_skin">'.__('Skin','1player').'</label>', 'player_settings_audio_skin', 'media', 'player_audio_main');
         function player_settings_audio_skin(){
             $options = get_option('player_audio'); 
@@ -496,6 +525,56 @@ if ( is_admin() ){
                 <?php endforeach; ?>
             </select>
             <span class="description"><?php echo apply_filters('1player_skins_description', __('The selected player script does not provide skins', '1player')) ?></span>
+            <?php
+        }
+        
+        add_settings_field('player_audio_versions', __('Audio versions','1player'), 'player_settings_audio_versions', 'media', 'player_audio_main');
+        function player_settings_audio_versions(){
+            global $labels;
+            $options = get_option('player_audio'); 
+            if(!isset($options['versions']) || !is_array($options['versions'])) $options['versions'] = array();
+            ?>
+            <fieldset class="column" id="versions">
+                <header><?php _e('Available versions', '1player') ?></header>
+                <script type="text/template" class="template">
+                    <div>
+                        ${labels}
+                        {{each(i, version) versions }}
+                            <input type="hidden" name="player_audio[versions][${index}][${i}]" value="${version}">
+                        {{/each}}
+                        <button class="button suppr_version_button"><?php _e('Delete') ?></button>
+                    </div>
+                </script>
+                <?php foreach($options['versions'] as $i => $version) : ?>
+                    <div>
+                        <?php echo $labels[$version[0]].' - '.$labels[$version[1]]; if (sizeof($version)>2) echo ' - '.$labels[$version[2]] ?>
+                        <input type="hidden" name="player_audio[versions][<?php echo $i ?>][0]" value="<?php echo $version[0] ?>" />
+                        <input type="hidden" name="player_audio[versions][<?php echo $i ?>][1]" value="<?php echo $version[1] ?>" />
+                        <?php if(sizeof($version)>2) :?>
+                        <input type="hidden" name="player_audio[versions][<?php echo $i ?>][2]" value="<?php echo $version[2] ?>" />
+                        <?php endif; ?>
+                        <button class="button suppr_version_button"><?php _e('Delete') ?></button>
+                    </div>
+                <?php endforeach; ?>
+            </fieldset>
+            <fieldset class="column">
+                <header><?php _e('Add new version', '1player') ?></header>
+                <div>
+                    <?php _e('Playing mode', '1player') ?>: <input type="checkbox" checked="checked" name="type" value="html5"/><label><?php echo $labels['html5'] ?></label>
+                                     <input type="checkbox" checked="checked" name="type" value="flash"/><label><?php echo $labels['flash'] ?></label>
+                </div>
+                <div>
+                    <?php _e('Quality', '1player') ?>: <input type="radio" name="qualite" value="hd" checked="checked"/><label><?php echo $labels['hd'] ?></label> 
+                             <input type="radio" name="qualite" value="sd"/><label><?php echo $labels['sd'] ?></label>
+                </div>
+                <div>
+                    <?php _e('Format', '1player') ?>: <select name="format">
+                                <option value="ogg"><?php echo $labels['ogg'] ?></option>
+                                <option value="mp3"><?php echo $labels['mp3'] ?></option>
+                            </select>
+                </div>
+                <button class="button add_version_button"><?php _e('Add new version', '1player') ?></button>
+            </fieldset>
             <?php
         }
         
@@ -518,12 +597,12 @@ if ( is_admin() ){
     function player_edit_fields($form_fields, $post){
         global $labels;
     
-        // seulement pour les vidéos
-        if ( substr($post->post_mime_type, 0, 5) == 'video' ) {
+        // seulement pour les vidéos et les audios
+        if ( substr($post->post_mime_type, 0, 5) == 'video' || substr($post->post_mime_type, 0, 5) == 'audio' ) {
             $metas = get_post_meta($post->ID, "1player", true);
-            $player = get_option("player", true);
+            $player = get_option("player_".substr($post->post_mime_type, 0, 5), true);
 		
-		    if($player["poster"] == "attachment") {
+		    if(isset($player["poster"]) && $player["poster"] == "attachment") {
 		        // sélectionner la miniature depuis la bibliothèque
 		        $form_fields["poster"] = array(
                     "label" => __("Thumbnail"),
@@ -541,7 +620,7 @@ if ( is_admin() ){
             if(sizeof($player["versions"]) > 0) {
 		        foreach($player["versions"] as $version){
 		        
-		            $src = isset($metas['src'][$version[0]][$version[1]]) ? $metas['src'][$version[0]][$version[1]] : '';
+		            $src = (isset($metas['src']) && isset($metas['src'][$version[0]][$version[1]])) ? $metas['src'][$version[0]][$version[1]] : '';
 		            if(isset($version[2]) && isset($src[$version[2]])) $src = $src[$version[2]];
 		            
 		            $name = '[src]['.$version[0].']['.$version[1].']'.(sizeof($version)>2 ? '['.$version[2].']' : '');
@@ -580,13 +659,8 @@ if ( is_admin() ){
     // gestion des champs supplémentaires pour les vidéos depuis le web
     add_filter( 'type_url_form_media', 'player_insert_video_from_url');
     function player_insert_video_from_url(){
-        global $labels;
     
-        $player = get_option("player");
-        if(!isset($player["versions"]) || !is_array($player["versions"])) $player["versions"]=array();
-        
         // code copié depuis wp_media_insert_url_form dans /wp-admin/includes/media.php et modifié
-
 		if ( !apply_filters( 'disable_captions', '' ) ) {
 				$caption = '
 				<tr class="image-only">
@@ -604,38 +678,18 @@ if ( is_admin() ){
 		    $default_align = 'none';
 
 		$view = $table_class = 'not-image';
-		
-		// contruction des champs pour les URLs de la vidéo
-		$urls = '<tr class="not-image">
-			    <th valign="top" scope="row" class="label" style="width:130px;">
-				    <span class="alignleft"><label for="src">' . __('URL') . '</label></span>
-				    <span class="alignright"><abbr id="status_img" title="required" class="required">*</abbr></span>
-			    </th>
-			    <td class="field">';
-			    
-		if(sizeof($player["versions"]) == 0) {
-		    $urls .= '<input id="src" name="src" value="" type="text" aria-required="true" onblur="addExtImage.getImageData()" />';
-		} else {
-		    
-		    foreach($player["versions"] as $version){
-		        $urls .= $labels[$version[0]].' - '.$labels[$version[1]].(sizeof($version)>2 ? ' - '.$labels[$version[2]] : '')
-		            .'<br><input type="text" name="src['.$version[0].']['.$version[1].']'.(sizeof($version)>2 ? '['.$version[2].']' : '').'"/>';
-	        }
-		}
-		
-		$urls .= '</td></tr>';
 
 	    $return = '
 	    <p class="media-types"><label><input type="radio" name="media_type" value="image" id="image-only"' . checked( 'image-only', $view, false ) . ' /> ' . __( 'Image' ) . '</label> &nbsp; &nbsp; <label><input type="radio" name="media_type" value="generic" id="not-image"' . checked( 'not-image', $view, false ) . ' /> ' . __( 'Audio, Video, or Other File' ) . '</label></p>
 	    <table class="describe ' . $table_class . '"><tbody>
-		    <tr class="image-only">
+		    <tr>
 			    <th valign="top" scope="row" class="label" style="width:130px;">
 				    <span class="alignleft"><label for="src">' . __('URL') . '</label></span>
 				    <span class="alignright"><abbr id="status_img" title="required" class="required">*</abbr></span>
 			    </th>
 			    <td class="field"><input id="src" name="src" value="" type="text" aria-required="true" onblur="addExtImage.getImageData()" /></td>
 		    </tr>
-		    '.$urls.'
+		    
 		    <tr>
 			    <th valign="top" scope="row" class="label">
 				    <span class="alignleft"><label for="title">' . __('Title') . '</label></span>
@@ -675,28 +729,8 @@ if ( is_admin() ){
 			    <button type="button" class="button" value="" onclick="document.forms[0].url.value=null">' . __('None') . '</button>
 			    <button type="button" class="button" value="" onclick="document.forms[0].url.value=document.forms[0].src.value">' . __('Link to image') . '</button>
 			    <p class="help">' . __('Enter a link URL or click above for presets.') . '</p></td>
-		    </tr>';
+		    </tr>
 		    
-		    if($player["poster"] == "attachment") {
-		        /* DEBUT modif poster */
-		        $return .= '
-		    <tr class="not-image">
-			    <th valign="top" scope="row" class="label">
-				    <span class="alignleft"><label for="poster">' . __('Thumbnail') . '</label></span>
-			    </th>
-			    <td class="field">'.
-			        generateImageSelectorHTML(0, get_posts(array(
-                        "post_type" => "attachment",
-                        "numberposts" => -1,
-                        "post_status" => null,
-                        "post_mime_type" => "image",
-                        "post_parent" => null
-                    )))
-			    .'</td>
-		    </tr>';
-		        /* FIN modif poster */;
-		    }
-		    $return .= '
 		    <tr class="image-only">
 			    <td></td>
 			    <td>
@@ -780,24 +814,18 @@ if ( is_admin() ){
     add_action('media_upload_image', 'player_upload_new_video');
     function player_upload_new_video(){
         global $mime_types;
+        
         if (isset($_POST['savebutton'])) {
             $post_id = isset($_REQUEST['post_id']) ? intval($_REQUEST['post_id']) : 0;
-            // commencer par enregistrer la vidéo dans la bibliothèque
             
-            // récupérer la première valeur
-            $src = $_REQUEST['src'];
-            while(is_array($src)) {
-                $first_key = array_shift(array_keys($src));
-                if(array_key_exists($first_key, $mime_types) ) $mime_type = $mime_types[$first_key];
-                $src = array_shift($src);
-            }
-            
-            // TODO : récupérer le vrai type mime de la vidéo
+            // enregistrer le fichier dans la bibliothèque
+            $filetype = wp_check_filetype($_REQUEST['src']);
+            $mime = $filetype['type'] ? $filetype['type'] : 'video/mp4';
             $attachment_id = wp_insert_attachment(array(
-                'post_mime_type' => $mime_type,
+                'post_mime_type' => $mime,
                 'post_parent' => $post_id,
                 'post_title' => $_REQUEST['title'],
-                'guid' => $src,
+                'guid' => $_REQUEST['src'],
             ), false, $post_id);
             
             // enregistrer les metas
@@ -806,9 +834,19 @@ if ( is_admin() ){
                 $metas['poster'] = intval($_REQUEST['poster']);
             }
             
-            if(sizeof($_REQUEST['src']) > 1) {
-                $metas['src'] = $_REQUEST['src'];
-            }
+            if(substr($mime, 0, 5) == "video" || substr($mime, 0, 5) == "audio") {
+                $player = get_option("player_".substr($mime, 0, 5), true);
+                if(sizeof($player["versions"]) > 0) {
+		            foreach($player["versions"] as $version){
+		                if(!isset($default)) $default = $mime_types[$version[1]];
+		                if($mime_types[$version[1]] == $mime) {
+		                    if(sizeof($version)==3) $metas['src'][$version[0]][$version[1]][$version[2]] = $_REQUEST['src'];
+		                    else $metas['src'][$version[0]][$version[1]] = $_REQUEST['src'];
+		                    break;
+		                }
+		            }
+		        }
+		    }
             
             if(sizeof($metas) > 0) {
                 // sauvegarde des metas
