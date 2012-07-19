@@ -32,24 +32,22 @@ function player_init() {
         'ogg' => 'audio/ogg',
     );
     
-    add_filter('upload_mimes', 'player_add_mime');
-    function player_add_mime($mimes){
-        $mimes['webm'] = 'video/webm';
-        return $mimes;
-    }
-    
     $options = get_option('player_video');
     if($options['script'] != '') {
         $file = plugin_dir_path(__FILE__).'players/'.$options['script'].'/'.$options['script'].'.php';
         if(is_file($file)) require_once($file);
-        if(function_exists($options['script'].'_video_render')) add_action('player_video_render', $options['script'].'_video_render');
     }
     $options = get_option('player_audio');
     if($options['script'] != '') {
         $file = plugin_dir_path(__FILE__).'players/'.$options['script'].'/'.$options['script'].'.php';
         if(is_file($file)) require_once($file);
-        if(function_exists($options['script'].'_audio_render')) add_action('player_audio_render', $options['script'].'_audio_render');
     }
+}
+
+add_filter('upload_mimes', 'player_add_mime');
+function player_add_mime($mimes){
+    $mimes['webm'] = 'video/webm';
+    return $mimes;
 }
 
 $options = get_option('player_video');
@@ -154,8 +152,8 @@ function player_video_shortcode($atts) {
             }
         }
     }
-	
-    do_action('player_video_render', array(
+    
+    $args = array(
         'videos'    => $videos, 
         'width'     => $width,
         'height'    => $height,
@@ -164,20 +162,30 @@ function player_video_shortcode($atts) {
         'loop'      => $loop,
         'controls'  => $controls,
         'instance'  => "video$instance",
-    ));
+    );
 	
-    if(!has_action('player_video_render')){
-        $attributes = '';
-        if($controls != 'none') $attributes .= " controls";
-        if($loop) $attributes .= " loop";
-        if($autoplay) $attributes .= " autoplay";
-        
-	    ?><video<?php echo $attributes ?> id="player<?php echo 'video'.$instance ?>" poster="<?php echo $poster ?>" width="<?php echo $width ?>" height="<?php echo $height ?>">
-	        <?php foreach(array('flash', 'html5') as $mode): ?>
-	            <source src="<?php echo $videos[0][$mode]['src'] ?>" type="video/<?php echo array_pop(explode('.', $videos[0][$mode]['src'])) ?>">
-	        <?php endforeach; ?>
-	    </video><?php
-	}
+	$action_done = false;
+	if($options['script'] != '') {
+        do_action($options['script'].'_video_render', $args);
+        if(has_action($options['script'].'_video_render')) $action_done = true;
+    }
+    if(!$action_done) player_video_render($args);
+}
+
+// default player video rendering action
+function player_video_render($args){
+    $attributes = '';
+    if($args['controls'] != 'none') $attributes .= " controls";
+    if($args['loop']) $attributes .= " loop";
+    if($args['autoplay']) $attributes .= " autoplay";
+    
+    $poster = isset($args['videos'][0]['html5']) ? $args['videos'][0]['html5']['poster'] : $args['videos'][0]['flash']['poster'];
+    
+    ?><video<?php echo $attributes ?> id="player<?php echo $args['instance'] ?>" poster="<?php echo $poster ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
+        <?php foreach(array('flash', 'html5') as $mode): ?>
+            <source src="<?php echo $args['videos'][0][$mode]['src'] ?>" type="video/<?php echo array_pop(explode('.', $args['videos'][0][$mode]['src'])) ?>">
+        <?php endforeach; ?>
+    </video><?php
 }
 
 add_shortcode('audio', 'player_audio_shortcode');
@@ -238,8 +246,8 @@ function player_audio_shortcode($atts) {
             }
         }
     }
-	
-    do_action('player_audio_render', array(
+    
+    $args = array(
         'audios'    => $audios, 
         'width'     => $width,
         'height'    => $height,
@@ -248,20 +256,28 @@ function player_audio_shortcode($atts) {
         'loop'      => $loop,
         'controls'  => $controls,
         'instance'  => "audio$instance",
-    ));
+    );
 	
-    if(!has_action('player_audio_render')){
-        $attributes = '';
-        $attributes .= " controls";
-        if($loop) $attributes .= " loop";
-        if($autoplay) $attributes .= " autoplay";
-        
-	    ?><audio<?php echo $attributes ?> id="player<?php echo 'audio'.$instance ?>" width="<?php echo $width ?>" height="<?php echo $height ?>">
-	        <?php foreach(array('flash', 'html5') as $mode): ?>
-	            <source src="<?php echo $audios[0][$mode]['src'] ?>" type="audio/<?php echo array_pop(explode('.', $audios[0][$mode]['src'])) ?>">
-	        <?php endforeach; ?>
-	    </audio><?php
-	}
+	$action_done = false;
+	if($options['script'] != '') {
+        do_action($options['script'].'_audio_render', $args);
+        if(has_action($options['script'].'_audio_render')) $action_done = true;
+    }
+    if(!$action_done) player_audio_render($args);
+}
+
+// default player audio rendering action
+function player_audio_render($args){
+    $attributes = '';
+    $attributes .= " controls";
+    if($args['loop']) $attributes .= " loop";
+    if($args['autoplay']) $attributes .= " autoplay";
+    
+    ?><audio<?php echo $attributes ?> id="player<?php echo $args['instance'] ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
+        <?php foreach(array('flash', 'html5') as $mode): ?>
+            <source src="<?php echo $args['audios'][0][$mode]['src'] ?>" type="audio/<?php echo array_pop(explode('.', $args['audios'][0][$mode]['src'])) ?>">
+        <?php endforeach; ?>
+    </audio><?php
 }
 
 function player_is_video_attachment($post_id){
