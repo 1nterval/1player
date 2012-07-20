@@ -321,12 +321,13 @@ function player_find_source($attachment_id, $quality='sd', $compatibility='html5
                 }
             }
         }
-    } else {
-        $attachment = get_post($attachment_id);
-        $src = $attachment->guid;
+    }
+
+    // if no source is found in metas
+    if(!isset($src)){
+        $src = wp_get_attachment_url($attachment_id);
     }
     
-    // may be undefined if no source is found
     return $src;
 }
 
