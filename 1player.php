@@ -119,6 +119,8 @@ function player_video_shortcode($atts) {
             uasort($attachments , 'player_sort_attachments' );
         }
         
+        if(!is_array($attachments)) return;
+        
         foreach ( $attachments as $attachment ) {
             
             $metas = get_post_meta($attachment->ID, "1player", true);
