@@ -142,8 +142,7 @@ function player_video_shortcode($atts) {
                     unset($src);
                     $src = player_find_source($attachment->ID, 'sd', $mode);
                     $hd = player_find_source($attachment->ID, 'hd', $mode);
-                    if(!isset($src) || $src == "") {
-                        $src = $hd;
+                    if($src == $hd) {
                         unset($hd);
                     }
                     
@@ -176,16 +175,20 @@ function player_video_shortcode($atts) {
 
 // default player video rendering action
 function player_video_render($args){
+    global $mime_types;
+    
+    if(!isset($args['videos'][0]['html5'])) return;
+    
     $attributes = '';
     if($args['controls'] != 'none') $attributes .= " controls";
     if($args['loop']) $attributes .= " loop";
     if($args['autoplay']) $attributes .= " autoplay";
     
-    $poster = isset($args['videos'][0]['html5']) ? $args['videos'][0]['html5']['poster'] : $args['videos'][0]['flash']['poster'];
+    $poster = $args['videos'][0]['html5']['poster'];
     
     ?><video<?php echo $attributes ?> id="player<?php echo $args['instance'] ?>" poster="<?php echo $poster ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
-        <?php foreach(array('flash', 'html5') as $mode): ?>
-            <source src="<?php echo $args['videos'][0][$mode]['src'] ?>" type="video/<?php echo array_pop(explode('.', $args['videos'][0][$mode]['src'])) ?>">
+        <?php foreach($args['videos'][0]['html5']['src'] as $video): ?>
+            <source src="<?php echo $video['src'] ?>" type="<?php echo $mime_types[$video['compat']] ?>">
         <?php endforeach; ?>
     </video><?php
 }
@@ -311,23 +314,39 @@ function player_find_source($attachment_id, $quality='sd', $compatibility='html5
     if($compatibility != 'flash') $compatibility = 'html5';
     
     $metas = get_post_meta($attachment_id, "1player", true);
+    $src = array();
     
     if(isset($metas['src']) && isset($metas['src'][$quality])){
-        if(is_string($metas['src'][$quality]) && $metas['src'][$quality] != "") $src = $metas['src'][$quality];
+        if(is_string($metas['src'][$quality]) && $metas['src'][$quality] != "") $src[] = array('src' => $metas['src'][$quality]);
         else {
-            foreach($metas['src'][$quality] as $format){
-                if(is_string($format) && $format != "") $src = $format;
+            foreach($metas['src'][$quality] as $name => $format){
+                if(is_string($format) && $format != "") $src[] = array('src' => $format, 'compat' => $name);
                 else if(isset($format[$compatibility]) && $format[$compatibility] != "") {
-                    $src = $format[$compatibility];
-                    break;
+                    $src[] = array('src' => $format[$compatibility], 'compat' => $name);
+                }
+            }
+        }
+    }
+    
+    // si aucune source SD n'est trouvée, chercher les sources HD
+    if(sizeof($src) == 0 && $quality=='sd'){
+        $quality='hd';
+        if(isset($metas['src']) && isset($metas['src'][$quality])){
+            if(is_string($metas['src'][$quality]) && $metas['src'][$quality] != "") $src[] = array('src' => $metas['src'][$quality]);
+            else {
+                foreach($metas['src'][$quality] as $name => $format){
+                    if(is_string($format) && $format != "") $src[] = array('src' => $format, 'compat' => $name);
+                    else if(isset($format[$compatibility]) && $format[$compatibility] != "") {
+                        $src[] = array('src' => $format[$compatibility], 'compat' => $name);
+                    }
                 }
             }
         }
     }
 
     // if no source is found in metas
-    if(!isset($src)){
-        $src = wp_get_attachment_url($attachment_id);
+    if(sizeof($src) == 0){
+        $src[] = array('src' => wp_get_attachment_url($attachment_id), 'compat' => 'none');
     }
     
     return $src;
