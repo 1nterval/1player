@@ -369,7 +369,7 @@ function player_install() {
 	    ),
 	    'controls' => 'over',
 	    'poster' => 'attachment',
-	    'mode' => 'html5flash',
+	    'mode' => 'html5',
 	    'script' => ''
 	));
 	
@@ -379,7 +379,7 @@ function player_install() {
 	        array('sd', 'ogg', 'html5'),
 	        array('sd', 'mp3')
 	    ),
-	    'mode' => 'html5flash',
+	    'mode' => 'html5',
 	    'script' => ''
 	));
 }
@@ -521,12 +521,12 @@ if ( is_admin() ){
         
         add_settings_field('player_video_mode', __('Playing mode','1player'), 'player_settings_video_mode', 'media', 'player_video_main');
         function player_settings_video_mode(){
-            $options = get_option('player_video'); ?>
-                <label> <input name="player_video[mode]" type="radio" value="html5flash" <?php if($options['mode'] == "html5flash") echo 'checked="checked"' ?> /> <?php _e('HTML5 if possible, else Flash','1player') ?></label>
-                <label> <input name="player_video[mode]" type="radio" value="flashhtml5" <?php if($options['mode'] == "flashhtml5") echo 'checked="checked"' ?> /> <?php _e('Flash if possible, else HTML5','1player') ?></label>
-                <label> <input name="player_video[mode]" type="radio" value="html5" <?php if($options['mode'] == "html5") echo 'checked="checked"' ?> /> <?php _e('HTML5 only','1player') ?></label>
-                <label> <input name="player_video[mode]" type="radio" value="flash" <?php if($options['mode'] == "flash") echo 'checked="checked"' ?> /> <?php _e('Flash only','1player') ?></label>
-            <?php
+            $options = get_option('player_video'); 
+            $modes = array("html5" => __('HTML5 only', '1player'));
+            $modes = apply_filters('1player_modes_list', $modes);
+            foreach($modes as $name => $mode) : ?>
+                <label> <input name="player_video[mode]" type="radio" value="<?php echo $name ?>" <?php if($options['mode'] == $name) echo 'checked' ?> /> <?php echo $mode ?></label>
+            <?php endforeach;
         }
         
         register_setting( 'media', 'player_video');
@@ -622,12 +622,12 @@ if ( is_admin() ){
         
         add_settings_field('player_audio_mode', __('Playing mode','1player'), 'player_settings_audio_mode', 'media', 'player_audio_main');
         function player_settings_audio_mode(){
-            $options = get_option('player_audio'); ?>
-                <label> <input name="player_audio[mode]" type="radio" value="html5flash" <?php if($options['mode'] == "html5flash") echo 'checked="checked"' ?> /> <?php _e('HTML5 if possible, else Flash','1player') ?></label>
-                <label> <input name="player_audio[mode]" type="radio" value="flashhtml5" <?php if($options['mode'] == "flashhtml5") echo 'checked="checked"' ?> /> <?php _e('Flash if possible, else HTML5','1player') ?></label>
-                <label> <input name="player_audio[mode]" type="radio" value="html5" <?php if($options['mode'] == "html5") echo 'checked="checked"' ?> /> <?php _e('HTML5 only','1player') ?></label>
-                <label> <input name="player_audio[mode]" type="radio" value="flash" <?php if($options['mode'] == "flash") echo 'checked="checked"' ?> /> <?php _e('Flash only','1player') ?></label>
-            <?php
+            $options = get_option('player_audio');
+            $modes = array("html5" => __('HTML5 only', '1player'));
+            $modes = apply_filters('1player_modes_list', $modes);
+            foreach($modes as $name => $mode) : ?>
+                <label> <input name="player_audio[mode]" type="radio" value="<?php echo $name ?>" <?php if($options['mode'] == $name) echo 'checked' ?> /> <?php echo $mode ?></label>
+            <?php endforeach;
         }
         
         register_setting( 'media', 'player_audio');
