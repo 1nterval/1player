@@ -188,7 +188,7 @@ function player_video_render($args){
     
     ?><video<?php echo $attributes ?> id="player<?php echo $args['instance'] ?>" poster="<?php echo $poster ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
         <?php foreach($args['videos'][0]['html5']['src'] as $video): ?>
-            <source src="<?php echo $video['src'] ?>" type="<?php echo $mime_types[$video['compat']] ?>">
+            <source src="<?php echo $video['src'] ?>" <?php if($video['compat'] != 'none') echo 'type="'.$mime_types[$video['compat']].'"' ?>>
         <?php endforeach; ?>
     </video><?php
 }
