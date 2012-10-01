@@ -184,7 +184,7 @@ function player_video_render($args){
     if($args['loop']) $attributes .= " loop";
     if($args['autoplay']) $attributes .= " autoplay";
     
-    $poster = $args['videos'][0]['html5']['poster'];
+    $poster = $args['videos'][0]['poster'];
     
     ?><video<?php echo $attributes ?> id="player<?php echo $args['instance'] ?>" poster="<?php echo $poster ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
         <?php foreach($args['videos'][0]['html5']['src'] as $video): ?>
