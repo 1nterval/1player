@@ -807,23 +807,17 @@ if ( is_admin() ){
         
         $post_id = isset($_REQUEST['post_id']) ? intval($_REQUEST['post_id']) : 0;
         
-        // récupérer la première valeur
-        $src = $_REQUEST['src'];
-        while(is_array($src)) {
-            $first_key = array_shift(array_keys($src));
-            if(array_key_exists($first_key, $mime_types) ) $mime_type = $mime_types[$first_key];
-            $src = array_shift($src);
-        }
-        
         // ne prendre que les vidéos
-        if ( ( $ext = preg_replace( '/^.+?\.([^.]+)$/', '$1', $src ) ) && ( wp_ext2type( $ext ) != 'video' ) ) return;
+        if ( ( $ext = preg_replace( '/^.+?\.([^.]+)$/', '$1', $_REQUEST['src'] ) ) && ( wp_ext2type( $ext ) != 'video' ) ) return;
         
         // commencer par enregistrer la vidéo dans la bibliothèque
+        $filetype = wp_check_filetype($_REQUEST['src']);
+        $mime = $filetype['type'] ? $filetype['type'] : 'video/mp4';
         $attachment_id = wp_insert_attachment(array(
-            'post_mime_type' => $mime_type,
+            'post_mime_type' => $mime,
             'post_parent' => $post_id,
             'post_title' => $_REQUEST['title'],
-            'guid' => $src,
+            'guid' => $_REQUEST['src'],
         ), false, $post_id);
         
         // enregistrer les metas
