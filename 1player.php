@@ -1,8 +1,8 @@
 <?php
 /*
  * Plugin Name: 1Player
- * Plugin URI: http://www.1nterval.com
- * Description: Advanced HTML5 video player
+ * Author URI: http://www.1nterval.com
+ * Description: Advanced HTML5 video and audio player
  * Author: Fabien Quatravaux
  * Version: 1.2
 */
@@ -413,7 +413,7 @@ if ( is_admin() ){
         function player_settings_video_script(){
             $options = get_option('player_video'); ?>
                 <select name="player_video[script]" id="player_video_script">
-                    <option value="">None</option>
+                    <option value=""><?php _e('None', '1player') ?></option>
                     <?php foreach (scandir(plugin_dir_path(__FILE__).'/players') as $dir) :
                         $fulldir = plugin_dir_path(__FILE__).'/players/'.$dir;
                         if($dir != "." && $dir != ".." && is_dir($fulldir)) : ?>
@@ -535,7 +535,7 @@ if ( is_admin() ){
         function player_settings_audio_script(){
             $options = get_option('player_audio'); ?>
                 <select name="player_audio[script]">
-                    <option value="">None</option>
+                    <option value=""><?php _e('None', '1player') ?></option>
                     <?php foreach (scandir(plugin_dir_path(__FILE__).'/players') as $dir) :
                         $fulldir = plugin_dir_path(__FILE__).'/players/'.$dir;
                         if($dir != "." && $dir != ".." && is_dir($fulldir)) : ?>
