@@ -6,9 +6,11 @@ function videojs_add_scripts(){
     wp_enqueue_style("videojs",  plugins_url('video-js.min.css', __FILE__ ), array(), "3.2.0");
 }
 
-add_action('player_render', 'videojs_render');
+add_action('video-js_video_render', 'videojs_render');
 function videojs_render($args){
-    $options = get_option('player');
+    global $mime_types;
+    
+    $options = get_option('player_video');
     
     // gérer les modes et leur priorité
     $modes = "";
@@ -23,28 +25,38 @@ function videojs_render($args){
         if($mode == "") break;
     }
     
-    if(isset($args['videos']['html5'])) {
-        $src = $args['videos']['html5'][0]['src'];
-    } else if(isset($args['videos']['flash'])) {
-        $src = $args['videos']['flash'][0]['src'];
-    }
-    
     $attributes = '';
     if($args['controls'] != 'none') $attributes .= " controls";
     if($args['loop']) $attributes .= " loop";
     if($args['autoplay']) $attributes .= " autoplay";
-
-	?><video <?php echo $attributes ?> class="video-js vjs-default-skin" id="player<?php echo $args['instance'] ?>" poster="<?php echo $args['videos'][0]['poster'] ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
-	    <?php foreach(array('flash', 'html5') as $mode): ?>
-	        <source src="<?php echo $args['videos'][0][$mode]['src'] ?>" type="video/<?php echo array_pop(explode('.', $args['videos'][0][$mode]['src'])) ?>">
-	    <?php endforeach; ?>
-	</video>
+    
+    $poster = $args['videos'][0]['poster'];
+    
+    ?><video<?php echo $attributes ?> class="video-js vjs-default-skin" id="player<?php echo $args['instance'] ?>" poster="<?php echo $poster ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
+        <?php foreach($args['videos'][0]['html5']['src'] as $video): ?>
+            
+            <source src="<?php echo $video['src'] ?>" <?php if($video['compat'] != 'none') echo 'type="'.$mime_types[$video['compat']].'"' ?>>
+        <?php endforeach; ?>
+    </video>
 	
-	<script>
+    <script>
         _V_("player<?php echo $args['instance'] ?>", { 
             techOrder : [<?php echo $modes ?>],
             flash:{swf: "<?php echo plugins_url('video-js.swf', __FILE__ ) ?>"}
         });
     </script><?php
+}
+
+add_filter('1player_skins_list', 'videojs_skins_list');
+function videojs_skins_list($list){
+    // TODO : add skins here
+    return $list;
+}
+
+add_filter('1player_modes_list', 'videojs_modes_list');
+function videojs_modes_list($list){
+    $list["html5flash"] = __('HTML5 if possible, else Flash','1player');
+    $list["flashhtml5"] = __('Flash if possible, else HTML5','1player');
+    return $list;
 }
 ?>
