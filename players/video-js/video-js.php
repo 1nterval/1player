@@ -34,7 +34,6 @@ function videojs_render($args){
     
     ?><video<?php echo $attributes ?> class="video-js vjs-default-skin" id="player<?php echo $args['instance'] ?>" poster="<?php echo $poster ?>" width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>">
         <?php foreach($args['videos'][0]['html5']['src'] as $video): ?>
-            
             <source src="<?php echo $video['src'] ?>" <?php if($video['compat'] != 'none') echo 'type="'.$mime_types[$video['compat']].'"' ?>>
         <?php endforeach; ?>
     </video>
@@ -47,13 +46,13 @@ function videojs_render($args){
     </script><?php
 }
 
-add_filter('1player_skins_list', 'videojs_skins_list');
+add_filter('video-js_video_skins_list', 'videojs_skins_list');
 function videojs_skins_list($list){
     // TODO : add skins here
     return $list;
 }
 
-add_filter('1player_modes_list', 'videojs_modes_list');
+add_filter('video-js_video_modes_list', 'videojs_modes_list');
 function videojs_modes_list($list){
     $list["html5flash"] = __('HTML5 if possible, else Flash','1player');
     $list["flashhtml5"] = __('Flash if possible, else HTML5','1player');

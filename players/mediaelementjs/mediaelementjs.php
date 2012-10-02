@@ -53,7 +53,7 @@ function mediaelementjs_render($args){
     </script><?php
 }
 
-add_filter('1player_skins_list', 'mediaelementjs_skins_list');
+add_filter('mediaelementjs_video_skins_list', 'mediaelementjs_skins_list');
 function mediaelementjs_skins_list($list){
     foreach (scandir(plugin_dir_path(__FILE__).'skins') as $dir) {
         $fulldir = plugin_dir_path(__FILE__).'skins/'.$dir;
@@ -65,18 +65,18 @@ function mediaelementjs_skins_list($list){
     return $list;
 }
 
-add_filter('1player_skins_description', 'mediaelementjs_skins_description');
+add_filter('mediaelementjs_video_skins_description', 'mediaelementjs_skins_description');
 function mediaelementjs_skins_description($desc){
     return sprintf(__('Skins are located in %1$s folder', '1player'), '<code>/wp-content/plugins/1player/players/mediaelementjs/skins</code>');
 }
 
-add_filter('1player_controls_positions_list', 'mediaelementjs_controls_positions_list');
+add_filter('mediaelementjs_controls_positions_list', 'mediaelementjs_controls_positions_list');
 function mediaelementjs_controls_positions_list($list){
     $list["fixed"] = __("Fixed", "1player");
     return $list;
 }
 
-add_filter('1player_modes_list', 'mediaelementjs_modes_list');
+add_filter('mediaelementjs_video_modes_list', 'mediaelementjs_modes_list');
 function mediaelementjs_modes_list($list){
     $list["html5flash"] = __('HTML5 if possible, else Flash','1player');
     $list["flashhtml5"] = __('Flash if possible, else HTML5','1player');

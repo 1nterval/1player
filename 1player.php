@@ -438,13 +438,17 @@ if ( is_admin() ){
         function player_settings_video_skin(){
             $options = get_option('player_video'); 
             $skins = array("none" => __('Default skin', '1player'));
-            $skins = apply_filters('1player_skins_list', $skins);
+            if($options['script'] != '') $skins = apply_filters($options['script'].'_video_skins_list', $skins);
             ?><select name="player_video[skin]">
                 <?php foreach($skins as $name => $skin) : ?>
                 <option value="<?php echo $name ?>" <?php if($options['skin'] == $name) echo "selected" ?>><?php echo $skin ?></option>
                 <?php endforeach; ?>
             </select>
-            <span class="description"><?php echo apply_filters('1player_skins_description', __('The selected player script does not provide skins', '1player')) ?></span>
+            <?php 
+                $description = __('The selected player script does not provide skins', '1player');
+                if($options['script'] != '') $description = apply_filters($options['script'].'_video_skins_description', $description);
+            ?>
+            <span class="description"><?php echo $description ?></span>
             <?php
         }
         
@@ -452,7 +456,7 @@ if ( is_admin() ){
         function player_settings_video_controls(){
             $options = get_option('player_video'); 
                 $positions = array("over" => __('Over', '1player'), "none" => __('None', '1player'));
-                $positions = apply_filters('1player_controls_positions_list', $positions);
+                if($options['script'] != '') $positions = apply_filters($options['script'].'_controls_positions_list', $positions);
                 foreach($positions as $name => $position) : ?>
                 <label> <input name="player_video[controls]" type="radio" value="<?php echo $name ?>" <?php if($options['controls'] == $name) echo 'checked' ?> /> <?php echo $position ?></label>
                 <?php endforeach; ?>
@@ -523,7 +527,7 @@ if ( is_admin() ){
         function player_settings_video_mode(){
             $options = get_option('player_video'); 
             $modes = array("html5" => __('HTML5 only', '1player'));
-            $modes = apply_filters('1player_modes_list', $modes);
+            if($options['script'] != '') $modes = apply_filters($options['script'].'_video_modes_list', $modes);
             foreach($modes as $name => $mode) : ?>
                 <label> <input name="player_video[mode]" type="radio" value="<?php echo $name ?>" <?php if($options['mode'] == $name) echo 'checked' ?> /> <?php echo $mode ?></label>
             <?php endforeach;
@@ -534,7 +538,7 @@ if ( is_admin() ){
         add_settings_field('player_audio_script', __('Player script','1player'), 'player_settings_audio_script', 'media', 'player_audio_main');
         function player_settings_audio_script(){
             $options = get_option('player_audio'); ?>
-                <select name="player_audio[script]">
+                <select name="player_audio[script]" id="player_audio_script">
                     <option value=""><?php _e('None', '1player') ?></option>
                     <?php foreach (scandir(plugin_dir_path(__FILE__).'/players') as $dir) :
                         $fulldir = plugin_dir_path(__FILE__).'/players/'.$dir;

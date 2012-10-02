@@ -57,5 +57,9 @@ jQuery(function($){
         });
         
     });
+    
+    $('#player_video_script, #player_audio_script').change(function(e){
+        $(e.currentTarget.form.submit).click();
+    });
 
 });
