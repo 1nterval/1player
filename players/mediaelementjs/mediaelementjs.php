@@ -3,8 +3,8 @@
 add_action('wp_print_scripts', 'mediaelementjs_add_scripts');
 function mediaelementjs_add_scripts(){
     $options = get_option('player_video');
-    wp_enqueue_script("mediaelementjs",  plugins_url('mediaelement-and-player.min.js', __FILE__ ), array('jquery'), "2.9.1", false);
-    wp_enqueue_style("mediaelementjs",  plugins_url('mediaelementplayer.css', __FILE__ ), array(), "2.9.1");
+    wp_enqueue_script("mediaelementjs",  plugins_url('mediaelement-and-player.min.js', __FILE__ ), array('jquery'), "2.9.5", false);
+    wp_enqueue_style("mediaelementjs",  plugins_url('mediaelementplayer.css', __FILE__ ), array(), "2.9.5");
     if($options['skin'] != 'none') 
         wp_enqueue_style($options['skin'], plugins_url('skins/'.$options['skin'].'/mejs-skin.css', __FILE__ ), array("mediaelementjs"));
 }
