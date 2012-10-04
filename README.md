@@ -19,13 +19,13 @@ Another feature is video or audio playlist : the same player is used to display 
 The plugin has been designed to allow easy extensions to support other HTML5 players. Let's suppose your player is named "super_html5".
 You will have to create a new directory in `wp-content/plugins/1player/players/super_html5` that contains a super_html5.php with the following content :
 
-`add_action('super_html5_video_render', 'super_html5_render');
-function super_html5_render($args){
-    // $args contains video sources and player options
-    
-    // display HTML5 video tag
-    ?><video width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>" src="$args['videos'][0]['html5']['src']['src']" /><?php
-}`
+    add_action('super_html5_video_render', 'super_html5_render');
+    function super_html5_render($args){
+        // $args contains video sources and player options
+        
+        // display HTML5 video tag
+        ?><video width="<?php echo $args['width'] ?>" height="<?php echo $args['height'] ?>" src="$args['videos'][0]['html5']['src']['src']" /><?php
+    }
 
 #### skins
 
@@ -34,7 +34,7 @@ But you can use MediaElementJS or VideoJS to provide the same skin across all br
 
 For a personal skin development, please contact [1nterval](http://www.1nterval.com).
 
-![Screenshot 3](assets/screenshot-3.png)
+![Screenshot 3](https://raw.github.com/Fab1en/1player/master/assets/screenshot-3.png)
 Video player for [amazonie.arte.tv](http://amazonie.arte.tv) with playlist controlled by thumbnails on the right
 
 ### License
@@ -55,5 +55,6 @@ You should have received a copy of the GNU General Public License
 along with 1player.  If not, see <http://www.gnu.org/licenses/>
 
 [MediaElementJS](https://github.com/johndyer/mediaelement) is developped by [John Dyer](http://j.hn/) under GPLv2.
+
 [VideoJS](https://github.com/zencoder/video-js) is developped by [zencoder](http://zencoder.com/) under LGPLv3
 
